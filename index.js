@@ -142,7 +142,7 @@ async function handleCallback() {
 
 function importOfficialSpotifySession(){
   try{
-    const es=ctx()?.extensionSettings || {};
+    const es=getContext()?.extensionSettings || {};
     for(const [key,val] of Object.entries(es)){
       if(!val || typeof val!=='object') continue;
       const tok=val.clientToken;
@@ -431,7 +431,7 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.2</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -443,7 +443,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.7.1 · добавлен безопасный мост к уже авторизованной сессии официального Spotify.</div>
+      <div class="sp-note">v0.7.2 · исправлен мост Spotify: использует реальный getContext().extensionSettings.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -463,7 +463,7 @@ function createSettings() {
     $id('sp-auth').onclick=authenticate;
     $id('sp-import-official').onclick=async()=>{
       if(!importOfficialSpotifySession()){
-        oauthState('Сохранённая сессия официального Spotify не найдена','error');
+        oauthState('Официальная Spotify-сессия не найдена в extensionSettings','error');
         toastr?.warning?.('Сначала один раз войди в официальном Spotify.');
         return;
       }
@@ -551,6 +551,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.7.1 ready');
+    console.log('[SoundPulse] v0.7.2 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

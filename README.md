@@ -1,5 +1,6 @@
-# SoundPulse v0.7.1
-Adds a migration bridge from the official SillyTavern Spotify extension.
-If the official extension has an existing clientToken/access_token in SillyTavern extension settings, SoundPulse can copy that session into its own local token store and immediately verify `/v1/me` and playback.
-The official extension does not have to remain enabled after its saved session is imported.
-Direct PKCE remains available.
+# SoundPulse v0.7.2
+Concrete bridge bug fix:
+- v0.7.1 called `ctx()` inside importOfficialSpotifySession(), but no `ctx()` function exists in SoundPulse.
+- The exception was caught silently, so the bridge always reported/fell back as if no official Spotify session existed.
+- v0.7.2 uses `getContext().extensionSettings` correctly.
+This also avoids the callback race when both official Spotify and SoundPulse are enabled: if official Spotify consumes the shared `/callback/spotify` query first, SoundPulse can import the token it saved.

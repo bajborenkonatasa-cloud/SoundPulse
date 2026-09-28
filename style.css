@@ -199,3 +199,8 @@ html > body > #soundpulse-mini{
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
 }
+
+#soundpulse-settings .sp-secret-row{display:flex;gap:8px;align-items:center}
+#soundpulse-settings .sp-secret-row .text_pole{flex:1;min-width:0}
+#soundpulse-settings .sp-eye{width:46px;min-width:46px;padding:6px}
+#soundpulse-settings .sp-help{opacity:.68;font-size:.88em;line-height:1.28;margin:3px 4px 10px}

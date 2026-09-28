@@ -1,20 +1,9 @@
-# SoundPulse v0.2.0
+# SoundPulse v0.2.1
+Исправления:
+- визуальный плеер теперь открывается через native `<dialog>` top layer, как проверенный подход Scene Omens;
+- пункт SoundPulse в волшебной палочке открывает top-layer плеер;
+- тестовая кнопка открывает тот же top-layer;
+- Spotify OAuth использует `/callback/spotify`, как официальный SillyTavern Spotify extension;
+- callback понимает SillyTavern `source=spotify&query=...`.
 
-Диагностическая автономная версия.
-
-- Собственный Spotify Client ID + OAuth PKCE.
-- Не зависит от официального Spotify extension.
-- SoundPulse появляется в меню «волшебной палочки» (`#extensionsMenu`), как MoodTube.
-- Плавающий винил создаётся независимо от Spotify.
-- В настройках есть «Показать тестовый винил».
-- Диагностика UI / Spotify / Playback.
-- Auto / In-world / Soundtrack / Visual only.
-- Music Awareness.
-- Lyrics UI зарезервирован, источник lyrics пока не подключён.
-
-## Первый тест
-1. Установить расширение и перезагрузить SillyTavern.
-2. Открыть волшебную палочку: там должен быть пункт SoundPulse.
-3. Нажать его — винил/карточка должны открыться даже без Spotify.
-4. В настройках можно нажать «Показать тестовый винил».
-5. Затем вставить Spotify Client ID и нажать Authenticate.
+Важно: в Spotify Developer Dashboard Redirect URI для этого Client ID должен совпадать с адресом, который использует SillyTavern: `<ваш origin>/callback/spotify`.

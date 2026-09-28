@@ -44,7 +44,7 @@ async function challenge(verifier) {
     return btoa(String.fromCharCode(...new Uint8Array(hash)))
         .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
 }
-function redirectUri() { return window.location.origin + '/'; }
+function redirectUri() { return new URL('/callback/spotify', window.location.origin).toString(); }
 
 async function authenticate() {
     const id = ($id('sp-client-id')?.value || settings.clientId || '').trim();
@@ -60,11 +60,16 @@ async function authenticate() {
         scope:'user-read-private user-read-email user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-top-read user-read-recently-played',
         show_dialog:'true'
     });
-    window.open('https://accounts.spotify.com/authorize?'+params.toString(),'_blank');
+    // Use SillyTavern's own Spotify callback route, exactly like the official extension.
+    window.location.href='https://accounts.spotify.com/authorize?'+params.toString();
 }
 async function handleCallback() {
     const p=new URLSearchParams(location.search);
-    const code=p.get('code'), verifier=localStorage.getItem('soundpulse_spotify_verifier');
+    let code=p.get('code');
+    if (p.get('source')==='spotify' && p.get('query')) {
+        code=new URLSearchParams(p.get('query')).get('code');
+    }
+    const verifier=localStorage.getItem('soundpulse_spotify_verifier');
     const id=localStorage.getItem('soundpulse_spotify_client_id');
     if (!code || !verifier || !id) return false;
     try {
@@ -77,12 +82,14 @@ async function handleCallback() {
         t.expires_at=Date.now()+t.expires_in*1000;
         localStorage.setItem('soundpulse_spotify_token',JSON.stringify(t));
         localStorage.removeItem('soundpulse_spotify_verifier');
-        document.body.innerHTML='<div style="height:100vh;display:grid;place-items:center;background:#0c0813;color:#e7c9ff;font:600 20px system-ui;text-align:center;padding:24px">🎧 SoundPulse подключён к Spotify.<br><small style="opacity:.65">Можно закрыть эту вкладку.</small></div>';
-        setTimeout(()=>window.close(),1200);
-        return true;
+        history.replaceState({},document.title,location.pathname);
+        toastr?.success?.('SoundPulse подключён к Spotify 💜');
+        return false;
     } catch(e) {
-        document.body.innerHTML='<div style="padding:30px;background:#120a16;color:#ffb5c8;font-family:system-ui">SoundPulse Spotify OAuth: '+esc(e.message)+'</div>';
-        return true;
+        console.error('[SoundPulse OAuth]',e);
+        toastr?.error?.('SoundPulse Spotify OAuth: '+e.message);
+        history.replaceState({},document.title,location.pathname);
+        return false;
     }
 }
 function tokenData() { try{return JSON.parse(localStorage.getItem('soundpulse_spotify_token')||'null')}catch{return null} }
@@ -153,6 +160,52 @@ async function playback(action) {
     } catch(e) { toastr.warning('Spotify: '+e.message); }
 }
 
+function createTopLayer() {
+    if ($id('soundpulse-dialog')) return;
+    const d=document.createElement('dialog');
+    d.id='soundpulse-dialog';
+    d.innerHTML=`<div class="spd-shell">
+      <button id="spd-close" aria-label="Закрыть">×</button>
+      <div class="spd-vinyl"><div class="spd-grooves"><span>♫</span></div><div class="spd-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="spd-kicker">SOUNDPULSE</div>
+      <div id="spd-title">UI жив 💜</div>
+      <div id="spd-artist">Spotify подключим следующим слоем</div>
+      <div class="spd-line"><b id="spd-fill"></b></div>
+      <div class="spd-times"><span id="spd-now">0:00</span><span id="spd-total">0:00</span></div>
+      <div class="spd-controls"><button data-spd="prev">⏮</button><button data-spd="play">▶</button><button data-spd="next">⏭</button></div>
+      <div id="spd-mode">AUTO · Music Awareness</div>
+      <div class="spd-lyrics">♪ lyrics · место для одной текущей строки</div>
+    </div>`;
+    document.body.appendChild(d);
+    $id('spd-close').onclick=()=>d.close();
+    d.addEventListener('click',e=>{if(e.target===d)d.close()});
+    d.querySelectorAll('[data-spd]').forEach(b=>b.onclick=()=>playback(b.dataset.spd));
+}
+function openTopLayer(test=false) {
+    createTopLayer();
+    const d=$id('soundpulse-dialog');
+    if (test && !currentTrack) currentTrack={name:'SoundPulse UI Test',artist:'если ты это видишь — top layer работает 💜',cover:'',duration:188000,progress:42000,playing:true,stamp:Date.now()};
+    syncDialog();
+    if(!d.open)d.showModal();
+}
+function syncDialog() {
+    const d=$id('soundpulse-dialog'); if(!d)return;
+    const names={auto:'AUTO',inworld:'IN-WORLD',soundtrack:'SOUNDTRACK',visual:'VISUAL'};
+    $id('spd-mode').textContent=(names[settings?.mode]||'AUTO')+' · Music Awareness';
+    if(currentTrack){
+        $id('spd-title').textContent=currentTrack.name;
+        $id('spd-artist').textContent=currentTrack.artist;
+        const p=progress(),pct=currentTrack.duration?p/currentTrack.duration*100:0;
+        $id('spd-fill').style.width=pct+'%';$id('spd-now').textContent=fmt(p);$id('spd-total').textContent=fmt(currentTrack.duration);
+        d.classList.toggle('spd-playing',!!currentTrack.playing);
+        d.querySelector('[data-spd="play"]').textContent=currentTrack.playing?'❚❚':'▶';
+    }else{
+        $id('spd-title').textContent=tokenData()?'Spotify подключён':'SoundPulse готов';
+        $id('spd-artist').textContent=tokenData()?'Включи песню в Spotify':'Сначала проверяем интерфейс 💿';
+        d.classList.remove('spd-playing');
+    }
+}
+
 function createPlayer() {
     if ($id('soundpulse-player')) return;
     const el=document.createElement('div');
@@ -201,13 +254,13 @@ function attachMenu() {
     box.id='soundpulse-menu-item-container'; box.className='extension_container interactable'; box.tabIndex=0;
     box.innerHTML='<div id="soundpulse-wand-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0"><i class="fa-solid fa-music" style="width:20px;text-align:center"></i><span>SoundPulse</span></div>';
     menu.appendChild(box);
-    $id('soundpulse-wand-item').addEventListener('click',()=>{settings.folded=!settings.folded;save();render();});
+    $id('soundpulse-wand-item').addEventListener('click',()=>openTopLayer(false));
 }
 function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.2.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.2.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -234,7 +287,7 @@ function createSettings() {
     $id('sp-mode').onchange=e=>{settings.mode=e.target.value;save();render();inject()};
     $id('sp-reaction').onchange=e=>{settings.reaction=e.target.value;save();inject()};
     $id('sp-auth').onclick=authenticate; $id('sp-logout').onclick=logout;
-    $id('sp-test-ui').onclick=()=>{settings.folded=false;save();currentTrack={name:'SoundPulse UI Test',artist:'если ты это видишь — интерфейс жив 💜',cover:'',duration:188000,progress:42000,playing:true,stamp:Date.now()};render();};
+    $id('sp-test-ui').onclick=()=>openTopLayer(true);
 }
 function updateStatus() {
     if ($id('sp-auth-state')) $id('sp-auth-state').textContent=authStatus==='not-connected'?'—':authStatus==='error'?'✕':'✓';
@@ -262,7 +315,7 @@ function render() {
         $id('sp-artist').textContent=tokenData()?'Включи трек в Spotify':'вставь Client ID → Authenticate';
         $id('sp-art').style.display='none';
     }
-    updateStatus(); inject();
+    updateStatus(); inject(); syncDialog();
 }
 function applyCoverColor(url) {
     const img=new Image(); img.crossOrigin='anonymous';
@@ -283,16 +336,16 @@ function tick() {
     const p=progress(), pct=currentTrack.duration?p/currentTrack.duration*100:0;
     if($id('sp-line-fill'))$id('sp-line-fill').style.width=pct+'%';
     if($id('sp-now'))$id('sp-now').textContent=fmt(p);
-    if($id('sp-total'))$id('sp-total').textContent=fmt(currentTrack.duration);
+    if($id('sp-total'))$id('sp-total').textContent=fmt(currentTrack.duration); syncDialog();
 }
 async function init() {
     if(await handleCallback()) return;
     loadSettings();
-    createPlayer(); createSettings(); attachMenu(); render();
+    createPlayer(); createTopLayer(); createSettings(); attachMenu(); render();
     setInterval(attachMenu,1000);
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.2.0 ready');
+    console.log('[SoundPulse] v0.2.1 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

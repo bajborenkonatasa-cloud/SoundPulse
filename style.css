@@ -231,3 +231,12 @@ html > body > #soundpulse-mini{
 #soundpulse-settings .sp-mini-details{margin:6px 0 0;font-size:11.5px;opacity:.72}
 #soundpulse-settings .sp-mini-details summary{cursor:pointer}
 #soundpulse-settings .sp-note{font-size:10.5px;opacity:.45;margin-top:7px}
+
+/* v0.8.1 Music Brain */
+#soundpulse-settings .sp-brain-card{margin:9px 0 2px;padding:8px;border:1px solid rgba(130,220,255,.16);border-radius:10px;background:rgba(20,16,36,.18)}
+#soundpulse-settings .sp-brain-head{display:flex;align-items:center;gap:8px;font-size:12px}
+#soundpulse-settings .sp-brain-head span{margin-left:auto;font-size:10.5px;opacity:.82;border:1px solid rgba(220,100,210,.28);border-radius:999px;padding:3px 7px}
+#soundpulse-settings .sp-brain-sub{font-size:10.5px;line-height:1.3;opacity:.56;margin:6px 1px}
+#soundpulse-settings .sp-brain-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+#soundpulse-settings .sp-brain-actions .menu_button{min-height:31px!important;font-size:11px;padding:4px 6px!important}
+#soundpulse-settings .sp-brain-actions .sp-selected{border-color:rgba(100,225,255,.55)!important;box-shadow:inset 0 0 0 1px rgba(235,90,205,.20)}

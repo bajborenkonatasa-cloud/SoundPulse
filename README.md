@@ -1,8 +1,11 @@
-# SoundPulse v0.8.0 — Music Engine foundation
+# SoundPulse v0.8.1 — Music Brain
 
-- Keeps working Spotify account/playback/vinyl behavior from v0.7.6.
-- Adds compact RP setting “Передача модели”: Всегда / При смене трека / Умно / Никогда.
-- Adds local recent-track memory (last 20) for future Scene Match logic. This local bookkeeping uses no LLM tokens.
-- Keeps Auto / In-world / Soundtrack / Visual only and reaction intensity.
-- “Никогда” explicitly clears/blocks SoundPulse music prompt injection while Spotify UI/playback continues.
-- No separate LLM call is added by this version.
+This step keeps the proven Spotify/playback/vinyl core and adds a compact manual scene-role controller.
+
+- Music Brain card inside the RP drawer.
+- One-tap modes: Auto / In-world / Soundtrack / Visual only.
+- Auto instructs the RP model to treat music as physically audible only when plausible; otherwise as external soundtrack.
+- In-world permits natural character awareness/reaction.
+- Soundtrack explicitly prevents magical hearing and uses music only as narrative atmosphere.
+- Visual only keeps Spotify/vinyl but blocks SoundPulse prompt injection.
+- No extra LLM/API call is added by Music Brain itself.

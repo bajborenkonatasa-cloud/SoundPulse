@@ -448,11 +448,27 @@ function attachMenu() {
     menu.appendChild(box);
     $id('soundpulse-wand-item').addEventListener('click',()=>toggleMini());
 }
+
+function updateMusicBrainUI(){
+  const badge=document.getElementById('sp-brain-badge');
+  const sub=document.getElementById('sp-brain-sub');
+  if(!badge)return;
+  const mode=settings.mode||'auto';
+  const map={
+    auto:['✨ Auto','SoundPulse передаёт модели выбор: услышать музыку физически только когда это правдоподобно; иначе использовать её как внешний саундтрек.'],
+    inworld:['🔊 In-world','Музыка существует внутри сцены. Персонажи могут услышать её и естественно отреагировать.'],
+    soundtrack:['🎬 Soundtrack','Музыка внешняя. Персонажи её не слышат; она влияет только на тон и атмосферу повествования.'],
+    visual:['👁 Visual only','Только Spotify и винил. Музыкальный контекст модели не передаётся.']
+  };
+  badge.textContent=map[mode][0]; if(sub)sub.textContent=map[mode][1];
+  document.querySelectorAll('#soundpulse-settings .sp-brain-mode').forEach(b=>b.classList.toggle('sp-selected',b.dataset.sceneMode===mode));
+}
+
 function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.8.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.8.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content sp-compact-settings">
       <div class="sp-statusbar">
         <span>UI <b id="sp-ui-state">✓</b></span><span>Spotify <b id="sp-auth-state">—</b></span><span>Playback <b id="sp-play-state">—</b></span>
@@ -510,6 +526,16 @@ function createSettings() {
             <div><b>Естественно</b><span>Учитывается только когда подходит сцене.</span></div>
             <div><b>Активно</b><span>Влияет заметнее, но не обязана упоминаться каждый ответ.</span></div>
           </div>
+          <div class="sp-brain-card">
+            <div class="sp-brain-head"><b>🧠 Music Brain</b><span id="sp-brain-badge">🎬 Soundtrack</span></div>
+            <div class="sp-brain-sub" id="sp-brain-sub">Авто-логика не форсирует упоминание музыки.</div>
+            <div class="sp-brain-actions">
+              <button type="button" class="menu_button sp-brain-mode" data-scene-mode="auto">✨ Auto</button>
+              <button type="button" class="menu_button sp-brain-mode" data-scene-mode="inworld">🔊 В сцене</button>
+              <button type="button" class="menu_button sp-brain-mode" data-scene-mode="soundtrack">🎬 Саундтрек</button>
+              <button type="button" class="menu_button sp-brain-mode" data-scene-mode="visual">👁 Только винил</button>
+            </div>
+          </div>
         </div>
       </details>
 
@@ -521,7 +547,7 @@ function createSettings() {
         </div>
       </details>
 
-      <div class="sp-note">v0.8.0 · Music Engine: ручное управление + экономные режимы контекста.</div>
+      <div class="sp-note">v0.8.1 · Music Brain: живой режим сцены + ручное переопределение.</div>
     </div>`;
     host.appendChild(d);
 
@@ -540,7 +566,7 @@ function createSettings() {
     $id('sp-color').onchange=e=>{settings.dynamicColor=e.target.checked;save()};
     $id('sp-client-id').onchange=e=>{settings.clientId=e.target.value.trim();save()};
     $id('sp-client-eye').onclick=()=>{const f=$id('sp-client-id');const show=f.type==='password';f.type=show?'text':'password';$id('sp-client-eye').textContent=show?'🙈':'👁';};
-    $id('sp-mode').onchange=e=>{settings.mode=e.target.value;save();render();inject()};
+    $id('sp-mode').onchange=e=>{settings.mode=e.target.value;save();updateMusicBrainUI();render();inject()};
     $id('sp-reaction').onchange=e=>{settings.reaction=e.target.value;save();inject()};
     $id('sp-cadence').onchange=e=>{settings.awarenessCadence=e.target.value;save();inject()};
     $id('sp-auth').onclick=authenticate;
@@ -554,6 +580,12 @@ function createSettings() {
     };
     $id('sp-logout').onclick=logout;
     $id('sp-test-ui').onclick=()=>openTopLayer(true);
+    d.querySelectorAll('.sp-brain-mode').forEach(btn=>btn.onclick=()=>{
+      settings.mode=btn.dataset.sceneMode; save();
+      const sel=$id('sp-mode'); if(sel)sel.value=settings.mode;
+      updateMusicBrainUI(); render(); inject();
+    });
+    updateMusicBrainUI();
 
     d.querySelectorAll('.sp-info-toggle').forEach(btn=>{
       btn.onclick=()=>{
@@ -644,6 +676,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.8.0 ready');
+    console.log('[SoundPulse] v0.8.1 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

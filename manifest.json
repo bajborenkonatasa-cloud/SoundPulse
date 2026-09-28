@@ -1,0 +1,13 @@
+{
+  "display_name": "SoundPulse · Spotify",
+  "loading_order": 110,
+  "requires": [],
+  "optional": [
+    "Spotify"
+  ],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "BaiAlex / ChatGPT",
+  "version": "0.1.0",
+  "auto_update": false
+}

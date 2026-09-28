@@ -131,3 +131,19 @@
 #soundpulse-mini .spm-vinyl::before{filter:none!important;animation-duration:8.5s!important}
 #soundpulse-mini .spm-vinyl::after{animation-duration:4.8s!important}
 #soundpulse-mini .spm-shine{animation-duration:9s!important}
+
+/* v0.5.0 ARCHITECTURE FIX:
+   mini-player deliberately leaves browser top-layer.
+   Native SillyTavern drawers/settings must be able to cover it. */
+#soundpulse-mini,
+#soundpulse-mini[popover]{
+  position:fixed!important;
+  z-index:1900!important;
+  left:0!important;top:0!important;right:auto!important;bottom:auto!important;
+  margin:0!important;inset:auto!important;
+  display:block;
+  width:120px!important;height:138px!important;
+  background:transparent!important;border:0!important;outline:0!important;
+  box-shadow:none!important;padding:0!important;overflow:visible!important;
+}
+#soundpulse-mini.spm-hidden{display:none!important}

@@ -173,7 +173,7 @@ async function playback(action) {
 function createMiniPlayer() {
     if ($id('soundpulse-mini')) return;
     const el=document.createElement('div');
-    el.id='soundpulse-mini'; el.setAttribute('popover','manual');
+    el.id='soundpulse-mini';
     el.innerHTML=`<div class="sp-orb-shell">
       <button id="spm-hide" aria-label="Спрятать">‹</button>
       <div id="spm-vinyl" class="spm-vinyl">
@@ -235,16 +235,14 @@ function inChatView(){
 }
 function hideMini(manual=false){
     const e=$id('soundpulse-mini');if(!e)return;
-    try{if(e.matches(':popover-open'))e.hidePopover()}catch{e.style.display='none'}
+    e.classList.add('spm-hidden');
     if(manual)sessionStorage.setItem('soundpulse_hidden','1');
 }
 function enforceMiniScope(){if(!inChatView())hideMini(false)}
 function showMini(force=false){
-    if(!inChatView())return;
     if(!force&&sessionStorage.getItem('soundpulse_hidden')==='1')return;
     createMiniPlayer();const el=$id('soundpulse-mini');if(!el)return;
-    try{if(!el.matches(':popover-open'))el.showPopover()}catch{el.style.display='block'}
-    sessionStorage.removeItem('soundpulse_hidden');
+    el.classList.remove('spm-hidden');sessionStorage.removeItem('soundpulse_hidden');
     requestAnimationFrame(()=>{
       const x=settings.miniX!==null?settings.miniX:Math.max(8,innerWidth-132);
       const y=settings.miniY!==null?settings.miniY:Math.max(80,innerHeight-270);
@@ -255,7 +253,7 @@ function showMini(force=false){
 }
 function toggleMini(){
     const el=$id('soundpulse-mini');
-    if(el){try{if(el.matches(':popover-open')){hideMini(true);return}}catch{}}
+    if(el&&!el.classList.contains('spm-hidden')){hideMini(true);return}
     sessionStorage.removeItem('soundpulse_hidden');showMini(true);
 }
 function syncMini(){
@@ -370,7 +368,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.6</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.5.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -381,7 +379,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.4.6 · винил живёт только поверх #chat/#send_form; любой тап по интерфейсу Tavern прячет его.</div>
+      <div class="sp-note">v0.5.0 · mini-player больше НЕ top-layer: панели Tavern физически находятся поверх него.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -471,6 +469,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.4.6 ready');
+    console.log('[SoundPulse] v0.5.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

@@ -1,2 +1,2 @@
-# SoundPulse v0.4.1
-Fixes: draggable directly by the vinyl; transparent outer hitbox; smaller footprint; hide button on side; saved position.
+# SoundPulse v0.4.2
+Drag fix: Pointer Events + setPointerCapture directly on the vinyl, isolated from SillyTavern/RP Glass swipe handlers.

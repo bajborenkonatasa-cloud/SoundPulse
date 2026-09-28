@@ -94,3 +94,11 @@
   pointer-events:auto!important;right:-2px!important;top:43px!important;
   width:22px!important;height:22px!important;opacity:.88!important;
 }
+
+/* v0.4.2: pointer-capture drag must win over RP Glass / SillyTavern swipe handlers */
+#soundpulse-mini,#soundpulse-mini .sp-orb-shell,#soundpulse-mini .spm-vinyl{
+  touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+#soundpulse-mini .spm-vinyl *{pointer-events:none!important}
+#soundpulse-mini #spm-hide{pointer-events:auto!important;touch-action:manipulation!important}

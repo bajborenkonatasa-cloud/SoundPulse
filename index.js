@@ -214,7 +214,7 @@ function createMiniPlayer() {
     vinyl.addEventListener('pointercancel',dragEnd,{capture:true});
     let lastTap=0;
     vinyl.addEventListener('pointerup',()=>{const n=Date.now();if(n-lastTap<330){hideMini(true);lastTap=0}else lastTap=n});
-    el.addEventListener('click',e=>{if(moved){e.preventDefault();e.stopPropagation();return}if(!e.target.closest('#spm-hide'))openTopLayer(false)});
+    el.addEventListener('click',e=>{if(moved){e.preventDefault();e.stopPropagation();return;} /* v0.4.5: plain tap intentionally does nothing */});
     $id('spm-hide').onclick=e=>{e.stopPropagation();hideMini(true)};
 }
 function anyDrawerOpen(){
@@ -370,7 +370,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.4</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.5</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -381,7 +381,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.4.4 · винил скрывается при открытии панелей Tavern; добавлен солнечный перелив.</div>
+      <div class="sp-note">v0.4.5 · винил вызывается только через 🪄 SoundPulse и сам прячется при переходе к интерфейсу.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -454,15 +454,19 @@ function tick() {
 async function init() {
     if(await handleCallback()) return;
     loadSettings();
-    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render(); if(inChatView())showMini(); new MutationObserver(()=>{
-      const wasOpen=$id('soundpulse-mini')?.matches?.(':popover-open');
-      enforceMiniScope();
-      if(!wasOpen&&inChatView()&&sessionStorage.getItem('soundpulse_hidden')!=='1')showMini();
-    }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style','hidden']});
+    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render(); document.addEventListener('pointerdown',e=>{
+      const mini=$id('soundpulse-mini'); if(!mini)return;
+      if(e.composedPath().includes(mini))return;
+      const ui=e.target.closest?.('#top-bar,.drawer-toggle,.drawer-content,#extensions_settings,#ai_response_configuration,#advanced-formatting,.inline-drawer,.menu_button,.drawer-icon');
+      if(ui) hideMini(false);
+    },true);
+    document.addEventListener('click',e=>{
+      if(e.target.closest?.('#extensionsMenu,#extensionsMenuButton,.drawer-toggle,.drawer-icon,#top-bar')) hideMini(false);
+    },true);
     setInterval(attachMenu,1000);
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.4.4 ready');
+    console.log('[SoundPulse] v0.4.5 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

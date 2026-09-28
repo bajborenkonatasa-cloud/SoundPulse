@@ -126,3 +126,8 @@
   70%,100%{transform:translateX(70%) rotate(8deg);opacity:.12}
 }
 @keyframes sp-twinkle{0%,35%,100%{opacity:.15;transform:scale(.7) rotate(0deg)}48%{opacity:1;transform:scale(1.35) rotate(22deg)}62%{opacity:.35;transform:scale(.85) rotate(40deg)}}
+
+/* v0.4.5 performance + non-invasive UI */
+#soundpulse-mini .spm-vinyl::before{filter:none!important;animation-duration:8.5s!important}
+#soundpulse-mini .spm-vinyl::after{animation-duration:4.8s!important}
+#soundpulse-mini .spm-shine{animation-duration:9s!important}

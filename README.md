@@ -1,5 +1,7 @@
-# SoundPulse v0.4.4
-- Keeps the working transform drag from 0.4.3.
-- Hides vinyl whenever a visible SillyTavern drawer/settings panel is open.
-- Restores it in chat after the panel closes unless manually hidden.
-- Adds a subtle sunlight/holographic sweep and sparkle over the vinyl.
+# SoundPulse v0.4.5
+- Removed the expensive full-DOM MutationObserver that could slow chat rendering.
+- Vinyl no longer opens the large player or changes focus on a normal tap.
+- Vinyl is not auto-shown on every Tavern screen: summon it explicitly with Magic Wand → SoundPulse.
+- It hides when interacting with Tavern top-bar/drawers/settings controls.
+- Drag and holographic shine remain.
+- Shine animation is lighter/slower for mobile GPU.

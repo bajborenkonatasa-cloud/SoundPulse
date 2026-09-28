@@ -54,8 +54,8 @@ async function authenticate() {
     settings.clientId=id; save();
     if (!crypto?.subtle) { toastr.error('SoundPulse: Spotify OAuth требует HTTPS'); return; }
     const verifier=randomString();
-    localStorage.setItem('soundpulse_spotify_verifier', verifier);
-    localStorage.setItem('soundpulse_spotify_client_id', id);
+    sessionStorage.setItem('soundpulse_spotify_verifier', verifier);
+    sessionStorage.setItem('soundpulse_spotify_client_id', id);
     const params=new URLSearchParams({
         client_id:id,response_type:'code',redirect_uri:redirectUri(),
         code_challenge_method:'S256',code_challenge:await challenge(verifier),
@@ -77,8 +77,8 @@ async function handleCallback() {
     if (p.get('source')==='spotify' && p.get('query')) {
         code=new URLSearchParams(p.get('query')).get('code');
     }
-    const verifier=localStorage.getItem('soundpulse_spotify_verifier');
-    const id=localStorage.getItem('soundpulse_spotify_client_id');
+    const verifier=sessionStorage.getItem('soundpulse_spotify_verifier');
+    const id=sessionStorage.getItem('soundpulse_spotify_client_id') || settings.clientId;
     if (!code || !verifier || !id) return false;
     try {
         const r=await fetch('https://accounts.spotify.com/api/token',{
@@ -90,10 +90,12 @@ async function handleCallback() {
         t.expires_at=Date.now()+t.expires_in*1000;
         localStorage.setItem('soundpulse_spotify_token',JSON.stringify(t));
         oauthState('Token получен ✓','ok');
-        localStorage.removeItem('soundpulse_spotify_verifier');
+        sessionStorage.removeItem('soundpulse_spotify_verifier');
         history.replaceState({},document.title,location.pathname);
         toastr?.success?.('SoundPulse подключён к Spotify 💜');
-        return false;
+        await getUser();
+        await poll();
+        return true;
     } catch(e) {
         oauthState('OAuth error: '+e.message,'error');
         console.error('[SoundPulse OAuth]',e);
@@ -108,7 +110,7 @@ async function token() {
     if (!t) return null;
     if (Date.now() < (t.expires_at||0)-60000) return t.access_token;
     if (!t.refresh_token) return null;
-    const id=settings.clientId || localStorage.getItem('soundpulse_spotify_client_id');
+    const id=settings.clientId || sessionStorage.getItem('soundpulse_spotify_client_id');
     const r=await fetch('https://accounts.spotify.com/api/token',{
         method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:new URLSearchParams({grant_type:'refresh_token',refresh_token:t.refresh_token,client_id:id})
@@ -132,7 +134,9 @@ async function api(path,opt={}) {
 }
 async function logout() {
     localStorage.removeItem('soundpulse_spotify_token');
-    localStorage.removeItem('soundpulse_spotify_verifier');
+    sessionStorage.removeItem('soundpulse_spotify_verifier');
+    sessionStorage.removeItem('soundpulse_spotify_client_id');
+    sessionStorage.removeItem('soundpulse_spotify_verifier');
     currentTrack=null; authStatus='not-connected'; render();
     toastr.info('SoundPulse: Spotify отключён');
 }
@@ -369,7 +373,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.5.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.6.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -380,7 +384,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.5.1 · чистый круг без нижней плашки; фиксирован к viewport, а не к ленте чата.</div>
+      <div class="sp-note">v0.6.0 · прямой Spotify OAuth PKCE по схеме официального расширения.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -470,6 +474,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.5.1 ready');
+    console.log('[SoundPulse] v0.6.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

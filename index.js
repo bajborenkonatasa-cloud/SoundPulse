@@ -185,7 +185,7 @@ function createMiniPlayer() {
     </div>`;
     document.body.appendChild(el);
     let sx=null,sy=null,ox=0,oy=0,moved=false;
-    const start=e=>{if(e.target.closest('#spm-hide'))return;const p=e.touches?.[0]||e,r=el.getBoundingClientRect();sx=p.clientX;sy=p.clientY;ox=r.left;oy=r.top;moved=false};
+    const start=e=>{if(e.target.closest('#spm-hide'))return;if(!e.target.closest('#spm-vinyl'))return;const p=e.touches?.[0]||e,r=el.getBoundingClientRect();sx=p.clientX;sy=p.clientY;ox=r.left;oy=r.top;moved=false};
     const move=e=>{if(sx===null)return;const p=e.touches?.[0]||e,dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)+Math.abs(dy)<7)return;moved=true;e.preventDefault();el.style.left=Math.max(4,Math.min(innerWidth-el.offsetWidth-4,ox+dx))+'px';el.style.top=Math.max(4,Math.min(innerHeight-el.offsetHeight-4,oy+dy))+'px'};
     const end=()=>{if(moved){const r=el.getBoundingClientRect();settings.miniX=r.left;settings.miniY=r.top;save()}sx=sy=null};
     el.addEventListener('touchstart',start,{passive:true});document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',end);
@@ -218,7 +218,7 @@ function showMini(force=false){
     sessionStorage.removeItem('soundpulse_hidden');
     requestAnimationFrame(()=>{
       if(settings.miniX!==null&&settings.miniY!==null){el.style.left=settings.miniX+'px';el.style.top=settings.miniY+'px'}
-      else{el.style.left=Math.max(8,innerWidth-142)+'px';el.style.top=Math.max(80,innerHeight-245)+'px'}
+      else{el.style.left=Math.max(8,innerWidth-132)+'px';el.style.top=Math.max(80,innerHeight-270)+'px'}
     });
 }
 function toggleMini(){
@@ -338,7 +338,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -349,7 +349,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.4.0 · круглый винил-плеер. Волшебная палочка показывает/прячет его в чате.</div>
+      <div class="sp-note">v0.4.1 · круглый винил: перетаскивай пальцем прямо за пластинку; ‹ прячет.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -427,6 +427,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.4.0 ready');
+    console.log('[SoundPulse] v0.4.1 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

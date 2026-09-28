@@ -78,7 +78,7 @@ async function handleCallback() {
         code=new URLSearchParams(p.get('query')).get('code');
     }
     const verifier=sessionStorage.getItem('soundpulse_spotify_verifier');
-    const id=sessionStorage.getItem('soundpulse_spotify_client_id') || settings.clientId;
+    const id=sessionStorage.getItem('soundpulse_spotify_client_id') || settings?.clientId || '';
     if (!code || !verifier || !id) return false;
     try {
         const r=await fetch('https://accounts.spotify.com/api/token',{
@@ -373,7 +373,7 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.6.2</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.6.3</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -384,7 +384,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.6.2 · исправлен ранний выход после Spotify callback; UI всегда загружается.</div>
+      <div class="sp-note">v0.6.3 · исправлен startup-crash: настройки загружаются до проверки Spotify callback.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -455,8 +455,8 @@ function tick() {
     if($id('sp-total'))$id('sp-total').textContent=fmt(currentTrack.duration); syncDialog(); syncMini();
 }
 async function init() {
-    await handleCallback();
     loadSettings();
+    await handleCallback();
     createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render();
     // ST can build Extensions settings after third-party extensions initialize.
     // Retry only the settings mount for a short time; this is cheap and stops itself.
@@ -482,6 +482,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.6.2 ready');
+    console.log('[SoundPulse] v0.6.3 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

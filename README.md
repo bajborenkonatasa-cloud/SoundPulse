@@ -1,6 +1,6 @@
-# SoundPulse v0.7.5
-
-- Client ID masked by default with eye toggle.
-- Inline help for all modes and reaction levels.
-- Spotify playback-control success responses are no longer blindly parsed as JSON.
-- Existing Spotify bridge, player and Music Awareness behavior otherwise unchanged.
+# SoundPulse v0.7.6
+Compact settings UI.
+- Settings are grouped into collapsible drawers: Spotify, roleplay behavior, vinyl/appearance.
+- Long explanations are hidden behind ⓘ toggles.
+- Client ID remains password-masked with an eye toggle.
+- Spotify authentication, playback polling/control, vinyl rendering, and Music Awareness prompt logic are otherwise unchanged.

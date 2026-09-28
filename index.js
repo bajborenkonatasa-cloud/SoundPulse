@@ -439,37 +439,72 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.5</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
-    <div class="inline-drawer-content">
-      <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
-      <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
-      <div class="sp-help">Главный выключатель SoundPulse. Если выключить — винил, опрос Spotify и музыкальный контекст для модели отключаются; настройки и вход сохраняются.</div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.6</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    <div class="inline-drawer-content sp-compact-settings">
+      <div class="sp-statusbar">
+        <span>UI <b id="sp-ui-state">✓</b></span><span>Spotify <b id="sp-auth-state">—</b></span><span>Playback <b id="sp-play-state">—</b></span>
+        <span id="sp-account" class="sp-account-chip">Аккаунт: —</span>
+      </div>
 
-      <label>Spotify Client ID</label>
-      <div class="sp-secret-row"><input id="sp-client-id" class="text_pole" type="password" autocomplete="off" placeholder="Spotify Client ID"><button id="sp-client-eye" class="menu_button sp-eye" type="button" title="Показать / скрыть Client ID">👁</button></div>
-      <div class="sp-help">🔐 Client ID скрыт по умолчанию. Нажми 👁, чтобы временно показать его.</div>
+      <label class="checkbox_label sp-master"><input id="sp-enabled" type="checkbox"><span><b>SoundPulse</b> включён</span></label>
 
-      <div class="sp-settings-row"><button id="sp-auth" class="menu_button">🎧 Authenticate</button><button id="sp-logout" class="menu_button">Logout</button></div>
-      <div class="sp-help"><b>Authenticate</b> — отдельный вход SoundPulse. <b>Logout</b> — удалить сохранённую Spotify-сессию SoundPulse.</div>
-      <button id="sp-import-official" class="menu_button">🔗 Подхватить вход из официального Spotify</button>
-      <div class="sp-help">Одноразово копирует уже рабочую авторизацию официального Spotify. После успешного импорта SoundPulse использует свою сохранённую сессию.</div>
+      <details class="sp-section">
+        <summary>🔐 Spotify и подключение <span class="sp-summary-hint">аккаунт · ключ · вход</span></summary>
+        <div class="sp-section-body">
+          <label>Spotify Client ID</label>
+          <div class="sp-secret-row"><input id="sp-client-id" class="text_pole" type="password" autocomplete="off" placeholder="Spotify Client ID"><button id="sp-client-eye" class="menu_button sp-eye" type="button" title="Показать / скрыть Client ID">👁</button></div>
+          <button type="button" class="sp-info-toggle" data-help="sp-help-client">ⓘ Что это?</button>
+          <div id="sp-help-client" class="sp-help sp-collapsible-help" hidden>Client ID твоего Spotify Developer App. Он скрыт по умолчанию; 👁 временно показывает его.</div>
 
-      <label class="checkbox_label"><input id="sp-awareness" type="checkbox"><span>Music Awareness для модели</span></label>
-      <div class="sp-help">Передаёт модели короткий контекст о текущем треке. Если выключено — музыка остаётся только в интерфейсе.</div>
-      <label class="checkbox_label"><input id="sp-color" type="checkbox"><span>Динамический цвет от обложки</span></label>
-      <div class="sp-help">Подстраивает свечение SoundPulse под цвета обложки текущего трека.</div>
+          <div class="sp-settings-row"><button id="sp-auth" class="menu_button">🎧 Authenticate</button><button id="sp-logout" class="menu_button">Logout</button></div>
+          <button id="sp-import-official" class="menu_button">🔗 Подхватить вход из официального Spotify</button>
+          <button type="button" class="sp-info-toggle" data-help="sp-help-auth">ⓘ Как работает вход?</button>
+          <div id="sp-help-auth" class="sp-help sp-collapsible-help" hidden><b>Authenticate</b> — отдельный вход SoundPulse. <b>Logout</b> удаляет его сохранённую сессию. Мост нужен только для одноразового импорта уже рабочей авторизации.</div>
 
-      <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
-      <div class="sp-help sp-help-box"><b>Auto</b> — модель сама решает, слышна ли музыка в мире сцены.<br><b>In-world</b> — музыка реально звучит в сцене; персонажи могут слышать и естественно реагировать.<br><b>Soundtrack</b> — персонажи песню не слышат; она влияет только на атмосферу повествования.<br><b>Visual only</b> — только плеер; модели музыкальный контекст не передаётся.</div>
+          <details class="sp-mini-details">
+            <summary>Диагностика OAuth</summary>
+            <div id="sp-oauth-detail" class="sp-account">OAuth: —</div>
+            <div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div>
+          </details>
+        </div>
+      </details>
 
-      <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
-      <div class="sp-help sp-help-box"><b>Редко</b> — музыка почти не вмешивается.<br><b>Естественно</b> — учитывается только когда подходит сцене.<br><b>Активно</b> — музыка влияет заметнее, но не обязана упоминаться в каждом ответе.</div>
+      <details class="sp-section" open>
+        <summary>🎭 Поведение в ролевой <span class="sp-summary-hint">awareness · режим · реакция</span></summary>
+        <div class="sp-section-body">
+          <label class="checkbox_label"><input id="sp-awareness" type="checkbox"><span>Music Awareness для модели</span></label>
+          <button type="button" class="sp-info-toggle" data-help="sp-help-awareness">ⓘ</button>
+          <div id="sp-help-awareness" class="sp-help sp-collapsible-help" hidden>Передаёт модели короткий контекст о текущем треке. Выкл. — музыка остаётся только в интерфейсе и музыкальный prompt не добавляется.</div>
 
-      <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-help">Показывает внешний вид винила с тестовыми данными; Spotify для этого не нужен.</div>
-      <div class="sp-note">v0.7.5 · UI-подсказки + скрытый Client ID + исправлена обработка ответов playback.</div>
+          <div class="sp-setting-line"><label for="sp-mode">Режим</label><select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select><button type="button" class="sp-info-toggle sp-info-inline" data-help="sp-help-mode">ⓘ</button></div>
+          <div id="sp-help-mode" class="sp-help sp-help-table sp-collapsible-help" hidden>
+            <div><b>Auto</b><span>Сам решает: музыка в мире сцены или саундтрек.</span></div>
+            <div><b>In-world</b><span>Персонажи могут реально слышать музыку.</span></div>
+            <div><b>Soundtrack</b><span>Только атмосфера; персонажи трек не слышат.</span></div>
+            <div><b>Visual only</b><span>Только плеер; модели музыка не передаётся.</span></div>
+          </div>
+
+          <div class="sp-setting-line"><label for="sp-reaction">Реакция модели</label><select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select><button type="button" class="sp-info-toggle sp-info-inline" data-help="sp-help-reaction">ⓘ</button></div>
+          <div id="sp-help-reaction" class="sp-help sp-help-table sp-collapsible-help" hidden>
+            <div><b>Редко</b><span>Музыка почти не вмешивается.</span></div>
+            <div><b>Естественно</b><span>Учитывается только когда подходит сцене.</span></div>
+            <div><b>Активно</b><span>Влияет заметнее, но не обязана упоминаться каждый ответ.</span></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="sp-section">
+        <summary>🎨 Винил и оформление <span class="sp-summary-hint">цвет · тест</span></summary>
+        <div class="sp-section-body">
+          <label class="checkbox_label"><input id="sp-color" type="checkbox"><span>Динамический цвет от обложки</span></label>
+          <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
+        </div>
+      </details>
+
+      <div class="sp-note">v0.7.6 · компактные «шухлядки»; Spotify/playback-логика не изменялась.</div>
     </div>`;
     host.appendChild(d);
+
     $id('sp-enabled').checked=settings.enabled;
     $id('sp-awareness').checked=settings.awareness;
     $id('sp-color').checked=settings.dynamicColor;
@@ -478,7 +513,8 @@ function createSettings() {
     $id('sp-oauth-detail').textContent='OAuth: '+(sessionStorage.getItem('soundpulse_oauth_status')||'—');
     $id('sp-mode').value=settings.mode;
     $id('sp-reaction').value=settings.reaction;
-    $id('sp-enabled').onchange=e=>{settings.enabled=e.target.checked;save();render()};
+
+    $id('sp-enabled').onchange=e=>{settings.enabled=e.target.checked;save();render();inject()};
     $id('sp-awareness').onchange=e=>{settings.awareness=e.target.checked;save();inject()};
     $id('sp-color').onchange=e=>{settings.dynamicColor=e.target.checked;save()};
     $id('sp-client-id').onchange=e=>{settings.clientId=e.target.value.trim();save()};
@@ -493,8 +529,17 @@ function createSettings() {
         return;
       }
       await getUser(); await poll(); render();
-    }; $id('sp-logout').onclick=logout;
+    };
+    $id('sp-logout').onclick=logout;
     $id('sp-test-ui').onclick=()=>openTopLayer(true);
+
+    d.querySelectorAll('.sp-info-toggle').forEach(btn=>{
+      btn.onclick=()=>{
+        const help=$id(btn.dataset.help); if(!help)return;
+        help.hidden=!help.hidden;
+        btn.classList.toggle('is-open',!help.hidden);
+      };
+    });
 }
 function updateStatus() {
     if ($id('sp-auth-state')) $id('sp-auth-state').textContent=authStatus==='not-connected'?'—':authStatus==='error'?'✕':'✓';
@@ -576,6 +621,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.7.5 ready');
+    console.log('[SoundPulse] v0.7.6 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

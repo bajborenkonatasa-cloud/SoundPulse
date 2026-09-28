@@ -1,7 +1,7 @@
-# SoundPulse v0.5.0
-Architecture fix for mobile SillyTavern:
-- The mini vinyl is no longer a browser Popover/top-layer element.
-- It is a normal fixed overlay with a deliberately modest z-index.
-- SillyTavern drawers/settings/preset/API panels can therefore physically cover it.
-- Magic Wand → SoundPulse toggles it.
-- Drag, saved position, holographic sunlight sweep and double-tap hide are preserved.
+# SoundPulse v0.5.1
+- Removes the legacy lower translucent/footer/lyrics strip completely.
+- Mini player is a true 116×116 circular footprint.
+- Re-parents mini directly to document.body whenever shown, preventing transformed RP Glass/chat ancestors from making `position: fixed` scroll with the message list.
+- Keeps saved drag position.
+- Keeps panels above SoundPulse.
+- Keeps sunlight shimmer, but no permanent lyric surface.

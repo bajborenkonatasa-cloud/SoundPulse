@@ -79,7 +79,7 @@ async function handleCallback() {
     }
     const verifier=localStorage.getItem('soundpulse_spotify_verifier');
     const id=localStorage.getItem('soundpulse_spotify_client_id');
-    if (!code || !verifier || !id) { if(sessionStorage.getItem('soundpulse_oauth_started')) oauthState('Callback не получен: code/verifier отсутствует','error'); return false; }
+    if (!code || !verifier || !id) return false;
     try {
         const r=await fetch('https://accounts.spotify.com/api/token',{
             method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
@@ -197,7 +197,10 @@ function createMiniPlayer() {
     $id('spm-toggle').onclick=e=>{e.stopPropagation();el.classList.toggle('spm-orb-only');setTimeout(clamp,0)};
     window.addEventListener('resize',()=>setTimeout(clamp,50));
 }
+function inChatView(){try{const c=ctx();const chat=document.querySelector('#chat'),send=document.querySelector('#send_form');const vis=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).display!=='none');return Array.isArray(c?.chat)&&c.chat.length>0&&vis(chat)&&vis(send)}catch{return false}}
+function enforceMiniScope(){const e=$id('soundpulse-mini');if(!e||inChatView())return;try{if(e.matches(':popover-open'))e.hidePopover()}catch{e.style.display='none'}}
 function showMini() {
+    if(!inChatView())return;
     createMiniPlayer();
     const el=$id('soundpulse-mini'); if(!el)return;
     try{if(!el.matches(':popover-open'))el.showPopover()}catch{el.style.display='flex'}
@@ -207,6 +210,7 @@ function showMini() {
     });
 }
 function toggleMini() {
+    if(!inChatView()){try{toastr.info('SoundPulse показывается только внутри чата.')}catch{}return;}
     const el=$id('soundpulse-mini'); if(!el){showMini();return}
     try{el.matches(':popover-open')?el.hidePopover():showMini()}catch{el.style.display=el.style.display==='none'?'flex':'none'}
 }
@@ -326,7 +330,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.3.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.3.2</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -337,7 +341,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.3.1 · mini-player в top layer. Lyrics пока только подготовленный слот.</div>
+      <div class="sp-note">v0.3.2 · компактный mini-player только внутри чатов. Lyrics пока только подготовленный слот.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -410,11 +414,11 @@ function tick() {
 async function init() {
     if(await handleCallback()) return;
     loadSettings();
-    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render(); showMini();
+    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render(); if(inChatView())showMini(); new MutationObserver(()=>enforceMiniScope()).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
     setInterval(attachMenu,1000);
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.3.1 ready');
+    console.log('[SoundPulse] v0.3.2 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

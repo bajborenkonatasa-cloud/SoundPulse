@@ -39,3 +39,14 @@
 #soundpulse-mini:popover-open{display:flex}
 #soundpulse-mini::backdrop{background:transparent;pointer-events:none}
 #sp-redirect-uri{font-size:9px;user-select:text;word-break:break-all;color:var(--sp-opal)}
+
+#soundpulse-mini[popover]{width:min(218px,62vw)!important;height:50px!important;padding:5px 6px!important;gap:6px!important;border-radius:15px!important}
+#soundpulse-mini #spm-record{width:38px!important;height:38px!important;min-width:38px!important;padding:2px!important}
+#soundpulse-mini #spm-title{font-size:10.5px!important;line-height:12px!important;margin-top:1px!important}
+#soundpulse-mini #spm-artist{font-size:8px!important;line-height:10px!important}
+#soundpulse-mini .spm-top{font-size:7px!important;line-height:8px!important}
+#soundpulse-mini .spm-top #spm-user{max-width:74px!important}
+#soundpulse-mini .spm-top #spm-mode{font-size:6.5px!important}
+#soundpulse-mini .spm-progress{height:1.5px!important;margin-top:2px!important}
+#soundpulse-mini #spm-toggle{width:20px!important;height:20px!important;min-width:20px!important;font-size:12px!important}
+#soundpulse-mini.spm-orb-only{width:48px!important;height:48px!important;padding:4px!important;border-radius:50%!important}

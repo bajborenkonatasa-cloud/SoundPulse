@@ -213,6 +213,19 @@ async function getUser() {
     } catch(e) { authStatus='error'; oauthState('Spotify /me error: '+e.message,'error'); }
     updateStatus();
 }
+
+function rememberTrackLocal(track){
+  try{
+    const item=track?.item; if(!item?.id)return;
+    const key='soundpulse_track_history';
+    const list=JSON.parse(localStorage.getItem(key)||'[]');
+    if(list[0]?.id===item.id)return;
+    list.unshift({id:item.id,name:item.name||'',artist:(item.artists||[]).map(a=>a.name).join(', '),at:Date.now()});
+    localStorage.setItem(key,JSON.stringify(list.slice(0,20)));
+    sessionStorage.setItem('soundpulse_track_changed','1');
+  }catch{}
+}
+
 async function poll() {
     if (!settings.enabled) return;
     try {
@@ -439,7 +452,7 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.6</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.8.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content sp-compact-settings">
       <div class="sp-statusbar">
         <span>UI <b id="sp-ui-state">✓</b></span><span>Spotify <b id="sp-auth-state">—</b></span><span>Playback <b id="sp-play-state">—</b></span>
@@ -475,6 +488,13 @@ function createSettings() {
           <label class="checkbox_label"><input id="sp-awareness" type="checkbox"><span>Music Awareness для модели</span></label>
           <button type="button" class="sp-info-toggle" data-help="sp-help-awareness">ⓘ</button>
           <div id="sp-help-awareness" class="sp-help sp-collapsible-help" hidden>Передаёт модели короткий контекст о текущем треке. Выкл. — музыка остаётся только в интерфейсе и музыкальный prompt не добавляется.</div>
+          <div class="sp-setting-line"><label for="sp-cadence">Передача модели</label><select id="sp-cadence" class="text_pole"><option value="always">Всегда</option><option value="change">При смене трека</option><option value="smart">Умно</option><option value="off">Никогда</option></select><button type="button" class="sp-info-toggle sp-info-inline" data-help="sp-help-cadence">ⓘ</button></div>
+          <div id="sp-help-cadence" class="sp-help sp-help-table sp-collapsible-help" hidden>
+            <div><b>Всегда</b><span>Короткий музыкальный контекст идёт с каждым обычным RP-запросом.</span></div>
+            <div><b>Смена</b><span>Новый трек отмечается движком; минимум лишнего музыкального контекста.</span></div>
+            <div><b>Умно</b><span>Рекомендуемый баланс: движок учитывает трек, но инструкция просит не форсировать реакцию.</span></div>
+            <div><b>Никогда</b><span>Spotify и винил работают, модели музыка не передаётся.</span></div>
+          </div>
 
           <div class="sp-setting-line"><label for="sp-mode">Режим</label><select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select><button type="button" class="sp-info-toggle sp-info-inline" data-help="sp-help-mode">ⓘ</button></div>
           <div id="sp-help-mode" class="sp-help sp-help-table sp-collapsible-help" hidden>
@@ -501,7 +521,7 @@ function createSettings() {
         </div>
       </details>
 
-      <div class="sp-note">v0.7.6 · компактные «шухлядки»; Spotify/playback-логика не изменялась.</div>
+      <div class="sp-note">v0.8.0 · Music Engine: ручное управление + экономные режимы контекста.</div>
     </div>`;
     host.appendChild(d);
 
@@ -513,6 +533,7 @@ function createSettings() {
     $id('sp-oauth-detail').textContent='OAuth: '+(sessionStorage.getItem('soundpulse_oauth_status')||'—');
     $id('sp-mode').value=settings.mode;
     $id('sp-reaction').value=settings.reaction;
+    $id('sp-cadence').value=settings.awarenessCadence||'smart';
 
     $id('sp-enabled').onchange=e=>{settings.enabled=e.target.checked;save();render();inject()};
     $id('sp-awareness').onchange=e=>{settings.awareness=e.target.checked;save();inject()};
@@ -521,6 +542,7 @@ function createSettings() {
     $id('sp-client-eye').onclick=()=>{const f=$id('sp-client-id');const show=f.type==='password';f.type=show?'text':'password';$id('sp-client-eye').textContent=show?'🙈':'👁';};
     $id('sp-mode').onchange=e=>{settings.mode=e.target.value;save();render();inject()};
     $id('sp-reaction').onchange=e=>{settings.reaction=e.target.value;save();inject()};
+    $id('sp-cadence').onchange=e=>{settings.awarenessCadence=e.target.value;save();inject()};
     $id('sp-auth').onclick=authenticate;
     $id('sp-import-official').onclick=async()=>{
       if(!importOfficialSpotifySession()){
@@ -576,6 +598,7 @@ function applyCoverColor(url) {
     img.src=url;
 }
 function inject() {
+  if ((settings.awarenessCadence||'smart')==='off') { try { getContext()?.setExtensionPrompt?.('soundpulse',''); } catch{} return; }
     const ctx=getContext(), key='soundpulse_music_awareness';
     if(!settings?.enabled||!settings.awareness||!currentTrack||settings.mode==='visual'){ctx.setExtensionPrompt(key,'',-1,0);return}
     const text=`[SOUNDPULSE — LIVE MUSIC]
@@ -621,6 +644,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.7.6 ready');
+    console.log('[SoundPulse] v0.8.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

@@ -53,13 +53,14 @@ async function authenticate() {
     if (!id) { toastr.warning('SoundPulse: сначала вставь Spotify Client ID'); return; }
     settings.clientId=id; save();
     if (!crypto?.subtle) { toastr.error('SoundPulse: Spotify OAuth требует HTTPS'); return; }
-    const verifier=randomString();
+    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const verifier=crypto.getRandomValues(new Uint8Array(64)).reduce((s,b)=>s+chars[b%62],'');
     sessionStorage.setItem('soundpulse_spotify_verifier', verifier);
     sessionStorage.setItem('soundpulse_spotify_client_id', id);
     const params=new URLSearchParams({
         client_id:id,response_type:'code',redirect_uri:redirectUri(),
         code_challenge_method:'S256',code_challenge:await challenge(verifier),
-        scope:'user-read-private user-read-email user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-top-read user-read-recently-played',
+        scope:'user-read-private user-read-playback-state user-top-read user-modify-playback-state playlist-read-private',
         show_dialog:'true'
     });
     // Use SillyTavern's own Spotify callback route, exactly like the official extension.
@@ -72,36 +73,70 @@ function oauthState(msg,kind='info'){
     console.log('[SoundPulse OAuth]',kind,msg);
 }
 async function handleCallback() {
-    const p=new URLSearchParams(location.search);
-    let code=p.get('code');
-    if (p.get('source')==='spotify' && p.get('query')) {
-        code=new URLSearchParams(p.get('query')).get('code');
-    }
+    const params=new URLSearchParams(window.location.search);
+    if(params.get('source')!=='spotify') return false;
+    const query=params.get('query');
+    const code=query ? new URLSearchParams(query).get('code') : null;
+    const oauthError=query ? new URLSearchParams(query).get('error') : null;
     const verifier=sessionStorage.getItem('soundpulse_spotify_verifier');
-    const id=sessionStorage.getItem('soundpulse_spotify_client_id') || settings?.clientId || '';
-    if (!code || !verifier || !id) return false;
-    try {
-        const r=await fetch('https://accounts.spotify.com/api/token',{
-            method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-            body:new URLSearchParams({client_id:id,grant_type:'authorization_code',code,redirect_uri:redirectUri(),code_verifier:verifier})
-        });
-        if (!r.ok) throw new Error(await r.text());
-        const t=await r.json();
-        t.expires_at=Date.now()+t.expires_in*1000;
-        localStorage.setItem('soundpulse_spotify_token',JSON.stringify(t));
-        oauthState('Token получен ✓','ok');
-        sessionStorage.removeItem('soundpulse_spotify_verifier');
-        history.replaceState({},document.title,location.pathname);
-        toastr?.success?.('SoundPulse подключён к Spotify 💜');
-        await getUser();
-        await poll();
-        return true;
-    } catch(e) {
-        oauthState('OAuth error: '+e.message,'error');
-        console.error('[SoundPulse OAuth]',e);
-        toastr?.error?.('SoundPulse Spotify OAuth: '+e.message);
-        history.replaceState({},document.title,location.pathname);
-        return false;
+    const id=(sessionStorage.getItem('soundpulse_spotify_client_id') || settings?.clientId || '').trim();
+
+    if(oauthError){
+      oauthState('Spotify вернул ошибку: '+oauthError,'error');
+      history.replaceState({},document.title,window.location.pathname);
+      return false;
+    }
+    if(!code){
+      oauthState('Callback Spotify пришёл без code','error');
+      history.replaceState({},document.title,window.location.pathname);
+      return false;
+    }
+    if(!verifier){
+      oauthState('Callback получен, но потерян PKCE verifier','error');
+      history.replaceState({},document.title,window.location.pathname);
+      return false;
+    }
+    if(!id){
+      oauthState('Callback получен, но Client ID пуст','error');
+      history.replaceState({},document.title,window.location.pathname);
+      return false;
+    }
+
+    const body=new URLSearchParams({
+      client_id:id,
+      grant_type:'authorization_code',
+      redirect_uri:new URL('/callback/spotify',window.location.origin).toString(),
+      code_verifier:verifier,
+      code
+    });
+    try{
+      oauthState('Callback ✓ · получаю token…','info');
+      const r=await fetch('https://accounts.spotify.com/api/token',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body
+      });
+      const raw=await r.text();
+      let t; try{t=JSON.parse(raw)}catch{t=null}
+      if(!r.ok){
+        const detail=t?.error_description||t?.error||raw||r.statusText;
+        throw new Error(`${r.status} ${detail}`);
+      }
+      if(!t?.access_token) throw new Error('Spotify не вернул access_token');
+      t.expires_at=Date.now()+(Number(t.expires_in)||3600)*1000;
+      localStorage.setItem('soundpulse_spotify_token',JSON.stringify(t));
+      sessionStorage.removeItem('soundpulse_spotify_verifier');
+      sessionStorage.removeItem('soundpulse_spotify_client_id');
+      history.replaceState({},document.title,window.location.pathname);
+      oauthState('Token ✓ · проверяю аккаунт…','ok');
+      toastr?.success?.('SoundPulse подключён к Spotify 💜');
+      return true;
+    }catch(e){
+      history.replaceState({},document.title,window.location.pathname);
+      oauthState('Token error: '+e.message,'error');
+      console.error('[SoundPulse OAuth]',e);
+      toastr?.error?.('SoundPulse Spotify: '+e.message);
+      return false;
     }
 }
 function tokenData() { try{return JSON.parse(localStorage.getItem('soundpulse_spotify_token')||'null')}catch{return null} }
@@ -373,7 +408,7 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.6.3</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -384,7 +419,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.6.3 · исправлен startup-crash: настройки загружаются до проверки Spotify callback.</div>
+      <div class="sp-note">v0.7.0 · OAuth синхронизирован с официальным Spotify ST; подробная диагностика callback/token.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -456,8 +491,9 @@ function tick() {
 }
 async function init() {
     loadSettings();
-    await handleCallback();
+    const spotifyReturned=await handleCallback();
     createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render();
+    if(spotifyReturned || tokenData()){ setTimeout(async()=>{await getUser();await poll();render();},250); }
     // ST can build Extensions settings after third-party extensions initialize.
     // Retry only the settings mount for a short time; this is cheap and stops itself.
     let spMountTries=0;
@@ -482,6 +518,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.6.3 ready');
+    console.log('[SoundPulse] v0.7.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

@@ -1,4 +1,9 @@
-# SoundPulse v0.6.3
-Critical startup crash fix.
-0.6.0–0.6.2 called handleCallback() before loadSettings(). handleCallback() evaluated settings.clientId while settings was still undefined, so the entire extension stopped before creating either the Extensions drawer or Magic Wand item.
-Now loadSettings() runs first, and callback access is additionally guarded with settings?.clientId.
+# SoundPulse v0.7.0
+Spotify direct-auth diagnostic/fix.
+- Authentication request now mirrors the official SillyTavern Spotify extension:
+  - same `/callback/spotify`
+  - same five scopes
+  - 64-character crypto-random PKCE verifier
+  - same `source=spotify&query=...` callback envelope
+- Callback/token errors are shown directly in SoundPulse instead of disappearing.
+- On successful token exchange SoundPulse immediately checks `/v1/me` and current playback.

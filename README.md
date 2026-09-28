@@ -1,11 +1,7 @@
-# SoundPulse v0.9.0 FIXED
-
-Built directly from the user's current SoundPulse-main v0.8.1 repository ZIP.
-
-Adds Scene Match foundation:
-- manual snapshot of last 8 RP messages;
-- current Spotify track + SoundPulse mode included;
-- local preparation only, no hidden LLM call;
-- copy prepared request button.
-
-Existing Spotify auth/playback/vinyl/Music Brain behavior is preserved.
+# SoundPulse v0.10.0
+Compact milestone built from verified v0.9.0.
+- Music Brain and Scene Match collapse into drawers.
+- Scene Match gets AI source settings: Tavern Auto / custom OpenAI-compatible / Off.
+- Custom URL, masked API key and model are remembered locally.
+- Existing Spotify auth, playback, vinyl and Scene Match snapshot are preserved.
+- No background AI requests are added in this build.

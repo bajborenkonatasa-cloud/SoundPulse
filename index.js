@@ -503,7 +503,7 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.9.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.10.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content sp-compact-settings">
       <div class="sp-statusbar">
         <span>UI <b id="sp-ui-state">✓</b></span><span>Spotify <b id="sp-auth-state">—</b></span><span>Playback <b id="sp-play-state">—</b></span>
@@ -561,8 +561,8 @@ function createSettings() {
             <div><b>Естественно</b><span>Учитывается только когда подходит сцене.</span></div>
             <div><b>Активно</b><span>Влияет заметнее, но не обязана упоминаться каждый ответ.</span></div>
           </div>
-          <div class="sp-brain-card">
-            <div class="sp-brain-head"><b>🧠 Music Brain</b><span id="sp-brain-badge">🎬 Soundtrack</span></div>
+          <details class="sp-brain-card sp-mini-drawer">
+            <summary><b>🧠 Music Brain</b><span id="sp-brain-badge">🎬 Soundtrack</span></summary>
             <div class="sp-brain-sub" id="sp-brain-sub">Авто-логика не форсирует упоминание музыки.</div>
             <div class="sp-brain-actions">
               <button type="button" class="menu_button sp-brain-mode" data-scene-mode="auto">✨ Auto</button>
@@ -570,17 +570,35 @@ function createSettings() {
               <button type="button" class="menu_button sp-brain-mode" data-scene-mode="soundtrack">🎬 Саундтрек</button>
               <button type="button" class="menu_button sp-brain-mode" data-scene-mode="visual">👁 Только винил</button>
             </div>
-          </div>
+          </details>
 
-          <div class="sp-scene-match">
-            <div class="sp-brain-head"><b>✨ Scene Match</b><span id="sp-scene-status">готов</span></div>
+          <details class="sp-scene-match sp-mini-drawer">
+            <summary><b>✨ Scene Match</b><span id="sp-scene-status">готов</span></summary>
             <div class="sp-brain-sub">Ручной снимок текущей сцены. Никаких фоновых LLM-запросов: запускается только по твоему нажатию.</div>
             <div class="sp-scene-actions">
               <button type="button" id="sp-scene-snapshot" class="menu_button">✨ Снять настроение сцены</button>
               <button type="button" id="sp-scene-copy" class="menu_button">📋 Копировать запрос</button>
             </div>
+            <details class="sp-ai-drawer">
+              <summary>🤖 AI для Scene Match <span>Auto / свой API</span></summary>
+              <div class="sp-ai-body">
+                <label>Источник</label>
+                <select id="sp-ai-provider" class="text_pole">
+                  <option value="auto">Автоматически · Tavern</option>
+                  <option value="custom">Свой OpenAI-compatible API</option>
+                  <option value="off">Без AI</option>
+                </select>
+                <div id="sp-ai-custom" hidden>
+                  <input id="sp-ai-url" class="text_pole" placeholder="Base URL · например http://host:port/v1">
+                  <div class="sp-secret-row"><input id="sp-ai-key" class="text_pole" type="password" autocomplete="off" placeholder="API key"><button id="sp-ai-eye" class="menu_button" type="button">👁</button></div>
+                  <input id="sp-ai-model" class="text_pole" placeholder="Model ID">
+                  <button id="sp-ai-test" class="menu_button" type="button">🧪 Проверить настройки</button>
+                  <small>Ключ хранится локально на этом устройстве и скрыт по умолчанию.</small>
+                </div>
+              </div>
+            </details>
             <div id="sp-scene-result" class="sp-scene-result" hidden></div>
-          </div>
+          </details>
         </div>
       </details>
 
@@ -592,7 +610,7 @@ function createSettings() {
         </div>
       </details>
 
-      <div class="sp-note">v0.9.0 · Scene Match: ручной снимок сцены + подготовка музыкального запроса.</div>
+      <div class="sp-note">v0.10.0 · Compact Music Engine + AI provider.</div>
     </div>`;
     host.appendChild(d);
 
@@ -627,6 +645,23 @@ function createSettings() {
     $id('sp-test-ui').onclick=()=>openTopLayer(true);
     $id('sp-scene-snapshot').onclick=sceneMatchSnapshot;
     $id('sp-scene-copy').onclick=copySceneMatchPrompt;
+    const aiProvider=$id('sp-ai-provider'), aiCustom=$id('sp-ai-custom');
+    const loadAI=()=>{try{return JSON.parse(localStorage.getItem('soundpulse_scene_ai')||'{}')}catch{return {}}};
+    const saveAI=(x)=>localStorage.setItem('soundpulse_scene_ai',JSON.stringify(x));
+    const ai=loadAI();
+    aiProvider.value=ai.provider||'auto';
+    $id('sp-ai-url').value=ai.url||'';
+    $id('sp-ai-key').value=ai.key||'';
+    $id('sp-ai-model').value=ai.model||'';
+    const syncAI=()=>{aiCustom.hidden=aiProvider.value!=='custom'};
+    syncAI();
+    aiProvider.onchange=()=>{const x=loadAI();x.provider=aiProvider.value;saveAI(x);syncAI()};
+    for(const [id,k] of [['sp-ai-url','url'],['sp-ai-key','key'],['sp-ai-model','model']]){
+      $id(id).onchange=e=>{const x=loadAI();x[k]=e.target.value.trim();saveAI(x)};
+    }
+    $id('sp-ai-eye').onclick=()=>{const f=$id('sp-ai-key');f.type=f.type==='password'?'text':'password';$id('sp-ai-eye').textContent=f.type==='password'?'👁':'🙈'};
+    $id('sp-ai-test').onclick=()=>{const x=loadAI();(x.url&&x.model)?toastr?.success?.('URL и Model сохранены ✓'):toastr?.warning?.('Заполни Base URL и Model ID')};
+
     d.querySelectorAll('.sp-brain-mode').forEach(btn=>btn.onclick=()=>{
       settings.mode=btn.dataset.sceneMode; save();
       const sel=$id('sp-mode'); if(sel)sel.value=settings.mode;
@@ -723,6 +758,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.9.0 ready');
+    console.log('[SoundPulse] v0.10.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

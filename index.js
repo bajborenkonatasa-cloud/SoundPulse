@@ -187,8 +187,16 @@ async function api(path,opt={}) {
         ...opt, headers:{Authorization:'Bearer '+t,'Content-Type':'application/json',...(opt.headers||{})}
     });
     if (r.status===204) return {};
-    if (!r.ok) throw new Error('Spotify '+r.status);
-    return r.json();
+    if (!r.ok) {
+        const detail=await r.text().catch(()=> '');
+        throw new Error('Spotify '+r.status+(detail?' · '+detail.slice(0,120):''));
+    }
+    const type=(r.headers.get('content-type')||'').toLowerCase();
+    if (type.includes('application/json')) return r.json();
+    const text=await r.text().catch(()=> '');
+    if (!text.trim()) return {};
+    // Some successful playback-control responses are not JSON. They are still success.
+    return {ok:true,text};
 }
 async function logout() {
     localStorage.removeItem('soundpulse_spotify_token');
@@ -431,19 +439,35 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.2</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.5</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
-      <label>Spotify Client ID<input id="sp-client-id" class="text_pole" type="text" autocomplete="off" placeholder="вставь тот же Client ID"></label>
+      <div class="sp-help">Главный выключатель SoundPulse. Если выключить — винил, опрос Spotify и музыкальный контекст для модели отключаются; настройки и вход сохраняются.</div>
+
+      <label>Spotify Client ID</label>
+      <div class="sp-secret-row"><input id="sp-client-id" class="text_pole" type="password" autocomplete="off" placeholder="Spotify Client ID"><button id="sp-client-eye" class="menu_button sp-eye" type="button" title="Показать / скрыть Client ID">👁</button></div>
+      <div class="sp-help">🔐 Client ID скрыт по умолчанию. Нажми 👁, чтобы временно показать его.</div>
+
       <div class="sp-settings-row"><button id="sp-auth" class="menu_button">🎧 Authenticate</button><button id="sp-logout" class="menu_button">Logout</button></div>
+      <div class="sp-help"><b>Authenticate</b> — отдельный вход SoundPulse. <b>Logout</b> — удалить сохранённую Spotify-сессию SoundPulse.</div>
       <button id="sp-import-official" class="menu_button">🔗 Подхватить вход из официального Spotify</button>
+      <div class="sp-help">Одноразово копирует уже рабочую авторизацию официального Spotify. После успешного импорта SoundPulse использует свою сохранённую сессию.</div>
+
       <label class="checkbox_label"><input id="sp-awareness" type="checkbox"><span>Music Awareness для модели</span></label>
+      <div class="sp-help">Передаёт модели короткий контекст о текущем треке. Если выключено — музыка остаётся только в интерфейсе.</div>
       <label class="checkbox_label"><input id="sp-color" type="checkbox"><span>Динамический цвет от обложки</span></label>
+      <div class="sp-help">Подстраивает свечение SoundPulse под цвета обложки текущего трека.</div>
+
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
+      <div class="sp-help sp-help-box"><b>Auto</b> — модель сама решает, слышна ли музыка в мире сцены.<br><b>In-world</b> — музыка реально звучит в сцене; персонажи могут слышать и естественно реагировать.<br><b>Soundtrack</b> — персонажи песню не слышат; она влияет только на атмосферу повествования.<br><b>Visual only</b> — только плеер; модели музыкальный контекст не передаётся.</div>
+
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
+      <div class="sp-help sp-help-box"><b>Редко</b> — музыка почти не вмешивается.<br><b>Естественно</b> — учитывается только когда подходит сцене.<br><b>Активно</b> — музыка влияет заметнее, но не обязана упоминаться в каждом ответе.</div>
+
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.7.2 · исправлен мост Spotify: использует реальный getContext().extensionSettings.</div>
+      <div class="sp-help">Показывает внешний вид винила с тестовыми данными; Spotify для этого не нужен.</div>
+      <div class="sp-note">v0.7.5 · UI-подсказки + скрытый Client ID + исправлена обработка ответов playback.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -458,6 +482,7 @@ function createSettings() {
     $id('sp-awareness').onchange=e=>{settings.awareness=e.target.checked;save();inject()};
     $id('sp-color').onchange=e=>{settings.dynamicColor=e.target.checked;save()};
     $id('sp-client-id').onchange=e=>{settings.clientId=e.target.value.trim();save()};
+    $id('sp-client-eye').onclick=()=>{const f=$id('sp-client-id');const show=f.type==='password';f.type=show?'text':'password';$id('sp-client-eye').textContent=show?'🙈':'👁';};
     $id('sp-mode').onchange=e=>{settings.mode=e.target.value;save();render();inject()};
     $id('sp-reaction').onchange=e=>{settings.reaction=e.target.value;save();inject()};
     $id('sp-auth').onclick=authenticate;
@@ -551,6 +576,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.7.2 ready');
+    console.log('[SoundPulse] v0.7.5 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

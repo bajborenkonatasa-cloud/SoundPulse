@@ -106,3 +106,23 @@
 /* v0.4.3: top-layer popover stays anchored at 0,0; visible player moves by transform */
 #soundpulse-mini[popover]{position:fixed!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;margin:0!important;inset:auto!important;transform:translate3d(0,0,0);will-change:transform;overflow:visible!important}
 #soundpulse-mini .spm-vinyl{touch-action:none!important;overscroll-behavior:none!important}
+
+/* v0.4.4 sun-kissed holographic sparkle */
+#soundpulse-mini .spm-vinyl::before{
+  content:"";position:absolute;z-index:6;inset:-28%;border-radius:50%;pointer-events:none;
+  background:linear-gradient(112deg,transparent 24%,rgba(255,255,255,.04) 34%,rgba(255,248,205,.72) 43%,rgba(151,245,255,.46) 47%,rgba(255,148,245,.42) 51%,rgba(255,255,255,.08) 57%,transparent 67%);
+  mix-blend-mode:screen;filter:blur(.25px);
+  transform:translateX(-55%) rotate(8deg);
+  animation:sp-sun-sweep 5.8s ease-in-out infinite;
+}
+#soundpulse-mini .spm-vinyl::after{
+  content:"✦";position:absolute;z-index:7;left:20px;top:13px;pointer-events:none;
+  color:#fffde9;font-size:12px;text-shadow:0 0 4px #fff,0 0 9px #dffcff,0 0 14px #e78cff;
+  opacity:.2;animation:sp-twinkle 3.1s ease-in-out infinite;
+}
+@keyframes sp-sun-sweep{
+  0%,18%{transform:translateX(-65%) rotate(8deg);opacity:.16}
+  46%{transform:translateX(10%) rotate(8deg);opacity:.82}
+  70%,100%{transform:translateX(70%) rotate(8deg);opacity:.12}
+}
+@keyframes sp-twinkle{0%,35%,100%{opacity:.15;transform:scale(.7) rotate(0deg)}48%{opacity:1;transform:scale(1.35) rotate(22deg)}62%{opacity:.35;transform:scale(.85) rotate(40deg)}}

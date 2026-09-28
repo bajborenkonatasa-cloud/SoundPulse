@@ -218,8 +218,13 @@ function createMiniPlayer() {
     $id('spm-hide').onclick=e=>{e.stopPropagation();hideMini(true)};
 }
 function anyDrawerOpen(){
-    const selectors=['.drawer-content.openDrawer','#left-nav-panel.openDrawer','#right-nav-panel.openDrawer','.drawer-content[style*="display: block"]','.drawer-content[style*="display: flex"]'];
-    return selectors.some(s=>[...document.querySelectorAll(s)].some(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&getComputedStyle(e).opacity!=='0'));
+    const visible=e=>{
+      if(!e)return false;
+      const s=getComputedStyle(e),r=e.getBoundingClientRect();
+      return e.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>0&&r.width>40&&r.height>40;
+    };
+    const drawerSelectors=['.drawer-content','.drawer-content.openDrawer','.openDrawer','#left-nav-panel','#right-nav-panel','#extensions_settings','#ai_response_configuration','#advanced-formatting'];
+    return [...document.querySelectorAll(drawerSelectors.join(','))].some(e=>visible(e));
 }
 function inChatView(){
     try{
@@ -365,7 +370,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.3</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.4</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -376,7 +381,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.4.3 · drag через transform. Двойной тап по винилу — аварийно спрятать.</div>
+      <div class="sp-note">v0.4.4 · винил скрывается при открытии панелей Tavern; добавлен солнечный перелив.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -449,11 +454,15 @@ function tick() {
 async function init() {
     if(await handleCallback()) return;
     loadSettings();
-    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render(); if(inChatView())showMini(); new MutationObserver(()=>enforceMiniScope()).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render(); if(inChatView())showMini(); new MutationObserver(()=>{
+      const wasOpen=$id('soundpulse-mini')?.matches?.(':popover-open');
+      enforceMiniScope();
+      if(!wasOpen&&inChatView()&&sessionStorage.getItem('soundpulse_hidden')!=='1')showMini();
+    }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style','hidden']});
     setInterval(attachMenu,1000);
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.4.3 ready');
+    console.log('[SoundPulse] v0.4.4 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

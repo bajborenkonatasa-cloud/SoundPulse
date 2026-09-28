@@ -139,6 +139,29 @@ async function handleCallback() {
       return false;
     }
 }
+
+function importOfficialSpotifySession(){
+  try{
+    const es=ctx()?.extensionSettings || {};
+    for(const [key,val] of Object.entries(es)){
+      if(!val || typeof val!=='object') continue;
+      const tok=val.clientToken;
+      const cid=val.clientId;
+      if(!cid || !tok?.access_token) continue;
+      // Restrict to a Spotify-looking settings object, not an arbitrary token-bearing extension.
+      const looksSpotify=/spotify/i.test(key) || ('getCurrentTrack' in val) || ('searchTracks' in val);
+      if(!looksSpotify) continue;
+      const copy={...tok};
+      if(copy.expires && !copy.expires_at) copy.expires_at=copy.expires;
+      localStorage.setItem('soundpulse_spotify_token',JSON.stringify(copy));
+      if(!settings.clientId){settings.clientId=cid;save();}
+      oauthState('Сессия Spotify найдена ✓ · проверяю аккаунт…','ok');
+      return true;
+    }
+  }catch(e){ console.warn('[SoundPulse] official Spotify session import failed',e); }
+  return false;
+}
+
 function tokenData() { try{return JSON.parse(localStorage.getItem('soundpulse_spotify_token')||'null')}catch{return null} }
 async function token() {
     let t=tokenData();
@@ -408,18 +431,19 @@ function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.7.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
       <label>Spotify Client ID<input id="sp-client-id" class="text_pole" type="text" autocomplete="off" placeholder="вставь тот же Client ID"></label>
       <div class="sp-settings-row"><button id="sp-auth" class="menu_button">🎧 Authenticate</button><button id="sp-logout" class="menu_button">Logout</button></div>
+      <button id="sp-import-official" class="menu_button">🔗 Подхватить вход из официального Spotify</button>
       <label class="checkbox_label"><input id="sp-awareness" type="checkbox"><span>Music Awareness для модели</span></label>
       <label class="checkbox_label"><input id="sp-color" type="checkbox"><span>Динамический цвет от обложки</span></label>
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.7.0 · OAuth синхронизирован с официальным Spotify ST; подробная диагностика callback/token.</div>
+      <div class="sp-note">v0.7.1 · добавлен безопасный мост к уже авторизованной сессии официального Spotify.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -436,7 +460,15 @@ function createSettings() {
     $id('sp-client-id').onchange=e=>{settings.clientId=e.target.value.trim();save()};
     $id('sp-mode').onchange=e=>{settings.mode=e.target.value;save();render();inject()};
     $id('sp-reaction').onchange=e=>{settings.reaction=e.target.value;save();inject()};
-    $id('sp-auth').onclick=authenticate; $id('sp-logout').onclick=logout;
+    $id('sp-auth').onclick=authenticate;
+    $id('sp-import-official').onclick=async()=>{
+      if(!importOfficialSpotifySession()){
+        oauthState('Сохранённая сессия официального Spotify не найдена','error');
+        toastr?.warning?.('Сначала один раз войди в официальном Spotify.');
+        return;
+      }
+      await getUser(); await poll(); render();
+    }; $id('sp-logout').onclick=logout;
     $id('sp-test-ui').onclick=()=>openTopLayer(true);
 }
 function updateStatus() {
@@ -493,6 +525,7 @@ async function init() {
     loadSettings();
     const spotifyReturned=await handleCallback();
     createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render();
+    if(!tokenData()) importOfficialSpotifySession();
     if(spotifyReturned || tokenData()){ setTimeout(async()=>{await getUser();await poll();render();},250); }
     // ST can build Extensions settings after third-party extensions initialize.
     // Retry only the settings mount for a short time; this is cheap and stops itself.
@@ -518,6 +551,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.7.0 ready');
+    console.log('[SoundPulse] v0.7.1 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

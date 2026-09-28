@@ -464,11 +464,46 @@ function updateMusicBrainUI(){
   document.querySelectorAll('#soundpulse-settings .sp-brain-mode').forEach(b=>b.classList.toggle('sp-selected',b.dataset.sceneMode===mode));
 }
 
+
+function sceneMatchSnapshot(){
+  try{
+    const c=getContext?.();
+    const msgs=(c?.chat||[]).slice(-8).map(m=>{
+      const who=m?.is_user?'USER':'CHAR';
+      const text=String(m?.mes||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+      return text ? `${who}: ${text.slice(0,700)}` : '';
+    }).filter(Boolean);
+    const current=playback?.item;
+    const currentText=current ? `${current.name||''} — ${(current.artists||[]).map(a=>a.name).join(', ')}` : 'ничего';
+    const prompt=`Подбери музыку для текущей ролевой сцены.
+Верни 3 коротких поисковых варианта для Spotify: настроение/жанр/тип трека, без длинного объяснения.
+Не управляй персонажем пользователя и не меняй сюжет.
+Текущий трек: ${currentText}
+Режим SoundPulse: ${settings.mode||'auto'}
+Последние сообщения:
+${msgs.join('\n')}`;
+    sessionStorage.setItem('soundpulse_scene_match_prompt',prompt);
+    const box=document.getElementById('sp-scene-result');
+    if(box){
+      box.hidden=false;
+      box.textContent=msgs.length ? `Снимок готов: ${msgs.length} последних сообщений. Запрос подготовлен локально — скрытого LLM-вызова нет.` : 'Чат пока пуст — нечего анализировать.';
+    }
+    const st=document.getElementById('sp-scene-status'); if(st)st.textContent=msgs.length?'снимок ✓':'нет сцены';
+    return prompt;
+  }catch(e){ console.warn('[SoundPulse] Scene Match snapshot failed',e); return ''; }
+}
+async function copySceneMatchPrompt(){
+  const prompt=sessionStorage.getItem('soundpulse_scene_match_prompt')||sceneMatchSnapshot();
+  if(!prompt)return;
+  try{ await navigator.clipboard.writeText(prompt); toastr?.success?.('Scene Match: запрос скопирован'); }
+  catch{ toastr?.info?.('Scene Match подготовлен'); }
+}
+
 function createSettings() {
     const host=$id('extensions_settings2') || $id('extensions_settings') || document.querySelector('#extensions_settings2, #extensions_settings');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.8.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.9.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content sp-compact-settings">
       <div class="sp-statusbar">
         <span>UI <b id="sp-ui-state">✓</b></span><span>Spotify <b id="sp-auth-state">—</b></span><span>Playback <b id="sp-play-state">—</b></span>
@@ -536,6 +571,16 @@ function createSettings() {
               <button type="button" class="menu_button sp-brain-mode" data-scene-mode="visual">👁 Только винил</button>
             </div>
           </div>
+
+          <div class="sp-scene-match">
+            <div class="sp-brain-head"><b>✨ Scene Match</b><span id="sp-scene-status">готов</span></div>
+            <div class="sp-brain-sub">Ручной снимок текущей сцены. Никаких фоновых LLM-запросов: запускается только по твоему нажатию.</div>
+            <div class="sp-scene-actions">
+              <button type="button" id="sp-scene-snapshot" class="menu_button">✨ Снять настроение сцены</button>
+              <button type="button" id="sp-scene-copy" class="menu_button">📋 Копировать запрос</button>
+            </div>
+            <div id="sp-scene-result" class="sp-scene-result" hidden></div>
+          </div>
         </div>
       </details>
 
@@ -547,7 +592,7 @@ function createSettings() {
         </div>
       </details>
 
-      <div class="sp-note">v0.8.1 · Music Brain: живой режим сцены + ручное переопределение.</div>
+      <div class="sp-note">v0.9.0 · Scene Match: ручной снимок сцены + подготовка музыкального запроса.</div>
     </div>`;
     host.appendChild(d);
 
@@ -580,6 +625,8 @@ function createSettings() {
     };
     $id('sp-logout').onclick=logout;
     $id('sp-test-ui').onclick=()=>openTopLayer(true);
+    $id('sp-scene-snapshot').onclick=sceneMatchSnapshot;
+    $id('sp-scene-copy').onclick=copySceneMatchPrompt;
     d.querySelectorAll('.sp-brain-mode').forEach(btn=>btn.onclick=()=>{
       settings.mode=btn.dataset.sceneMode; save();
       const sel=$id('sp-mode'); if(sel)sel.value=settings.mode;
@@ -676,6 +723,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.8.1 ready');
+    console.log('[SoundPulse] v0.9.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

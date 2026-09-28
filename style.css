@@ -240,3 +240,9 @@ html > body > #soundpulse-mini{
 #soundpulse-settings .sp-brain-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 #soundpulse-settings .sp-brain-actions .menu_button{min-height:31px!important;font-size:11px;padding:4px 6px!important}
 #soundpulse-settings .sp-brain-actions .sp-selected{border-color:rgba(100,225,255,.55)!important;box-shadow:inset 0 0 0 1px rgba(235,90,205,.20)}
+
+/* v0.9.0 Scene Match */
+#soundpulse-settings .sp-scene-match{margin:8px 0 2px;padding:8px;border:1px solid rgba(235,100,210,.17);border-radius:10px;background:rgba(28,13,35,.15)}
+#soundpulse-settings .sp-scene-actions{display:grid;grid-template-columns:1.25fr .75fr;gap:5px;margin-top:6px}
+#soundpulse-settings .sp-scene-actions .menu_button{min-height:32px!important;font-size:11px;padding:4px 6px!important}
+#soundpulse-settings .sp-scene-result{font-size:10.5px;line-height:1.32;opacity:.65;margin-top:6px;padding:6px 7px;border-radius:7px;background:rgba(120,170,255,.06)}

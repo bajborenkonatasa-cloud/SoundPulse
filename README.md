@@ -1,11 +1,11 @@
-# SoundPulse v0.8.1 — Music Brain
+# SoundPulse v0.9.0 FIXED
 
-This step keeps the proven Spotify/playback/vinyl core and adds a compact manual scene-role controller.
+Built directly from the user's current SoundPulse-main v0.8.1 repository ZIP.
 
-- Music Brain card inside the RP drawer.
-- One-tap modes: Auto / In-world / Soundtrack / Visual only.
-- Auto instructs the RP model to treat music as physically audible only when plausible; otherwise as external soundtrack.
-- In-world permits natural character awareness/reaction.
-- Soundtrack explicitly prevents magical hearing and uses music only as narrative atmosphere.
-- Visual only keeps Spotify/vinyl but blocks SoundPulse prompt injection.
-- No extra LLM/API call is added by Music Brain itself.
+Adds Scene Match foundation:
+- manual snapshot of last 8 RP messages;
+- current Spotify track + SoundPulse mode included;
+- local preparation only, no hidden LLM call;
+- copy prepared request button.
+
+Existing Spotify auth/playback/vinyl/Music Brain behavior is preserved.

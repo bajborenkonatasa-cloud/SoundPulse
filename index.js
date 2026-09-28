@@ -188,7 +188,7 @@ function createMiniPlayer() {
     const vinyl=$id('spm-vinyl');
     const dragStart=e=>{
       if(e.button!==undefined&&e.button!==0)return;
-      const r=el.getBoundingClientRect();dragId=e.pointerId;sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;moved=false;
+      dragId=e.pointerId;sx=e.clientX;sy=e.clientY;ox=Number(el.dataset.dragX)||0;oy=Number(el.dataset.dragY)||0;moved=false;
       try{vinyl.setPointerCapture(e.pointerId)}catch{}
       e.preventDefault();e.stopPropagation();
     };
@@ -198,12 +198,13 @@ function createMiniPlayer() {
       if(!moved)return;
       const x=Math.max(4,Math.min(innerWidth-el.offsetWidth-4,ox+dx));
       const y=Math.max(4,Math.min(innerHeight-el.offsetHeight-4,oy+dy));
-      el.style.left=x+'px';el.style.top=y+'px';e.preventDefault();e.stopPropagation();
+      el.style.setProperty('transform',`translate3d(${x}px,${y}px,0)`,'important');
+      el.dataset.dragX=String(x);el.dataset.dragY=String(y);e.preventDefault();e.stopPropagation();
     };
     const dragEnd=e=>{
       if(dragId===null||e.pointerId!==dragId)return;
       try{vinyl.releasePointerCapture(e.pointerId)}catch{}
-      if(moved){const r=el.getBoundingClientRect();settings.miniX=Math.round(r.left);settings.miniY=Math.round(r.top);save()}
+      if(moved){settings.miniX=Math.round(Number(el.dataset.dragX)||0);settings.miniY=Math.round(Number(el.dataset.dragY)||0);save()}
       dragId=null;sx=sy=null;e.preventDefault();e.stopPropagation();
       setTimeout(()=>{moved=false},80);
     };
@@ -211,6 +212,8 @@ function createMiniPlayer() {
     vinyl.addEventListener('pointermove',dragMove,{capture:true});
     vinyl.addEventListener('pointerup',dragEnd,{capture:true});
     vinyl.addEventListener('pointercancel',dragEnd,{capture:true});
+    let lastTap=0;
+    vinyl.addEventListener('pointerup',()=>{const n=Date.now();if(n-lastTap<330){hideMini(true);lastTap=0}else lastTap=n});
     el.addEventListener('click',e=>{if(moved){e.preventDefault();e.stopPropagation();return}if(!e.target.closest('#spm-hide'))openTopLayer(false)});
     $id('spm-hide').onclick=e=>{e.stopPropagation();hideMini(true)};
 }
@@ -238,8 +241,11 @@ function showMini(force=false){
     try{if(!el.matches(':popover-open'))el.showPopover()}catch{el.style.display='block'}
     sessionStorage.removeItem('soundpulse_hidden');
     requestAnimationFrame(()=>{
-      if(settings.miniX!==null&&settings.miniY!==null){el.style.left=settings.miniX+'px';el.style.top=settings.miniY+'px'}
-      else{el.style.left=Math.max(8,innerWidth-132)+'px';el.style.top=Math.max(80,innerHeight-270)+'px'}
+      const x=settings.miniX!==null?settings.miniX:Math.max(8,innerWidth-132);
+      const y=settings.miniY!==null?settings.miniY:Math.max(80,innerHeight-270);
+      el.dataset.dragX=String(x);el.dataset.dragY=String(y);
+      el.style.left='0px';el.style.top='0px';
+      el.style.setProperty('transform',`translate3d(${x}px,${y}px,0)`,'important');
     });
 }
 function toggleMini(){
@@ -359,7 +365,7 @@ function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.2</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.4.3</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
       <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div><div id="sp-oauth-detail" class="sp-account">OAuth: —</div><div class="sp-account">Redirect URI: <code id="sp-redirect-uri"></code></div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
@@ -370,7 +376,7 @@ function createSettings() {
       <label>Режим<select id="sp-mode" class="text_pole"><option value="auto">Auto</option><option value="inworld">In-world</option><option value="soundtrack">Soundtrack</option><option value="visual">Visual only</option></select></label>
       <label>Реакция модели<select id="sp-reaction" class="text_pole"><option value="rare">Редко</option><option value="natural">Естественно</option><option value="active">Активно</option></select></label>
       <button id="sp-test-ui" class="menu_button">💿 Показать тестовый винил</button>
-      <div class="sp-note">v0.4.2 · drag fix: удерживай палец на виниле и тащи; ‹ прячет.</div>
+      <div class="sp-note">v0.4.3 · drag через transform. Двойной тап по винилу — аварийно спрятать.</div>
     </div>`;
     host.appendChild(d);
     $id('sp-enabled').checked=settings.enabled;
@@ -448,6 +454,6 @@ async function init() {
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.4.2 ready');
+    console.log('[SoundPulse] v0.4.3 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

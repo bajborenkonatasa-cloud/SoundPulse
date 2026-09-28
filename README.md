@@ -1,2 +1,2 @@
-# SoundPulse v0.4.2
-Drag fix: Pointer Events + setPointerCapture directly on the vinyl, isolated from SillyTavern/RP Glass swipe handlers.
+# SoundPulse v0.4.3
+Drag rewritten: top-layer popover stays anchored at 0,0 and is moved with translate3d. Double-tap vinyl = emergency hide.

@@ -1,14 +1,11 @@
-# SoundPulse v0.3.0
+# SoundPulse v0.3.1
 
-Первый компактный мобильный UI:
-- маленькая плавающая плашка (~265 px на телефоне);
-- перетаскивание пальцем по экрану + сохранение позиции;
-- × сворачивает плашку в один винил;
-- тап по компактной плашке открывает большой top-layer плеер;
-- волшебная палочка → SoundPulse показывает/прячет компактный виджет;
-- Spotify nickname после успешного OAuth показывается и в настройках, и на mini-player;
-- current track / artist / progress / playback status;
-- динамический accent от обложки сохранён;
-- большой dialog остаётся как подробный плеер/диагностика.
+- Compact mini-player moved into browser top layer with Popover API.
+- No backdrop / no blocking chat; draggable and position is saved.
+- Wand menu toggles the mini-player.
+- Big dialog remains only detailed/test view.
+- OAuth diagnostics now show exact Redirect URI and callback/token status.
+- Spotify nickname is shown after successful /me.
+- Old v0.2.0 footer corrected.
 
-До успешного OAuth оригинальный Spotify extension лучше оставить установленным.
+For Spotify Developer Dashboard, copy the exact Redirect URI shown in SoundPulse settings.

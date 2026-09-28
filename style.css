@@ -33,3 +33,9 @@
 #spm-toggle{width:24px;height:24px;min-width:24px;border:0;border-radius:50%;background:#ffffff0b;color:#fff;opacity:.65}.spm-orb-only{width:58px!important;height:58px!important;padding:5px!important;border-radius:50%!important}.spm-orb-only .spm-copy,.spm-orb-only #spm-toggle{display:none}.spm-orb-only #spm-record{width:46px;height:46px;min-width:46px}
 .sp-account{margin-top:3px;font-size:10px;opacity:.7}
 @media(max-width:600px){#soundpulse-mini{width:min(265px,70vw);height:62px;bottom:82px}#spm-record{width:45px;height:45px;min-width:45px}}
+
+/* v0.3.1: mini-player lives in the browser top layer via Popover API. */
+#soundpulse-mini[popover]{margin:0;inset:auto;border:1px solid color-mix(in srgb,var(--sp-accent) 78%,#fff 22%);overflow:visible}
+#soundpulse-mini:popover-open{display:flex}
+#soundpulse-mini::backdrop{background:transparent;pointer-events:none}
+#sp-redirect-uri{font-size:9px;user-select:text;word-break:break-all;color:var(--sp-opal)}

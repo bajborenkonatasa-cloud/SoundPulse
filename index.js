@@ -9,6 +9,8 @@ const DEFAULTS = {
     reaction: 'natural',
     dynamicColor: true,
     folded: true,
+    miniX: null,
+    miniY: null,
 };
 
 let settings;
@@ -160,6 +162,44 @@ async function playback(action) {
     } catch(e) { toastr.warning('Spotify: '+e.message); }
 }
 
+function createMiniPlayer() {
+    if ($id('soundpulse-mini')) return;
+    const el=document.createElement('div');
+    el.id='soundpulse-mini';
+    el.innerHTML=`<button id="spm-record" aria-label="SoundPulse"><span class="spm-disc"><span>♫</span></span></button>
+      <div class="spm-copy"><div class="spm-top"><span id="spm-dot">●</span><span id="spm-user">SoundPulse</span><span id="spm-mode">AUTO</span></div>
+      <div id="spm-title">Spotify не подключён</div><div id="spm-artist">нажми для открытия</div>
+      <div class="spm-progress"><b id="spm-fill"></b></div></div>
+      <button id="spm-toggle" aria-label="Свернуть">×</button>`;
+    document.body.appendChild(el);
+    let moved=false,sx=0,sy=0,ox=0,oy=0;
+    const start=e=>{if(e.target.closest('#spm-toggle'))return;const p=e.touches?.[0]||e,m=el.getBoundingClientRect();sx=p.clientX;sy=p.clientY;ox=m.left;oy=m.top;moved=false};
+    const move=e=>{if(!sx&&!sy)return;const p=e.touches?.[0]||e,dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)+Math.abs(dy)<8)return;moved=true;e.preventDefault();const x=Math.max(5,Math.min(innerWidth-el.offsetWidth-5,ox+dx)),y=Math.max(5,Math.min(innerHeight-el.offsetHeight-5,oy+dy));el.style.left=x+'px';el.style.top=y+'px';el.style.right='auto';el.style.bottom='auto';settings.miniX=x;settings.miniY=y};
+    const end=()=>{if(moved)save();sx=sy=0};
+    el.addEventListener('touchstart',start,{passive:true});document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',end);
+    el.addEventListener('mousedown',start);document.addEventListener('mousemove',move);document.addEventListener('mouseup',end);
+    el.addEventListener('click',e=>{if(moved){moved=false;return}if(!e.target.closest('#spm-toggle'))openTopLayer(false)});
+    $id('spm-toggle').onclick=e=>{e.stopPropagation();el.classList.toggle('spm-orb-only');};
+    if(settings.miniX!==null&&settings.miniY!==null){el.style.left=settings.miniX+'px';el.style.top=settings.miniY+'px';el.style.right='auto';el.style.bottom='auto'}
+}
+function syncMini() {
+    const el=$id('soundpulse-mini'); if(!el)return;
+    const names={auto:'AUTO',inworld:'WORLD',soundtrack:'OST',visual:'VISUAL'};
+    $id('spm-mode').textContent=names[settings?.mode]||'AUTO';
+    $id('spm-dot').classList.toggle('ok',!!tokenData());
+    $id('spm-user').textContent=(authStatus && !['not-connected','connected','error'].includes(authStatus))?authStatus:'SoundPulse';
+    if(currentTrack){
+        $id('spm-title').textContent=currentTrack.name;
+        $id('spm-artist').textContent=currentTrack.artist;
+        const p=progress();$id('spm-fill').style.width=(currentTrack.duration?p/currentTrack.duration*100:0)+'%';
+        el.classList.toggle('spm-playing',!!currentTrack.playing);
+    }else{
+        $id('spm-title').textContent=tokenData()?'Spotify подключён':'Spotify не подключён';
+        $id('spm-artist').textContent=tokenData()?'включи трек':'Client ID → Authenticate';
+        $id('spm-fill').style.width='0%';el.classList.remove('spm-playing');
+    }
+}
+
 function createTopLayer() {
     if ($id('soundpulse-dialog')) return;
     const d=document.createElement('dialog');
@@ -254,15 +294,15 @@ function attachMenu() {
     box.id='soundpulse-menu-item-container'; box.className='extension_container interactable'; box.tabIndex=0;
     box.innerHTML='<div id="soundpulse-wand-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0"><i class="fa-solid fa-music" style="width:20px;text-align:center"></i><span>SoundPulse</span></div>';
     menu.appendChild(box);
-    $id('soundpulse-wand-item').addEventListener('click',()=>openTopLayer(false));
+    $id('soundpulse-wand-item').addEventListener('click',()=>{const m=$id('soundpulse-mini');if(!m)return;m.classList.toggle('spm-hidden');});
 }
 function createSettings() {
     const host=$id('extensions_settings2');
     if (!host || $id('soundpulse-settings')) return;
     const d=document.createElement('div'); d.id='soundpulse-settings'; d.className='inline-drawer';
-    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.2.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+    d.innerHTML=`<div class="inline-drawer-toggle inline-drawer-header"><b>🎧 SoundPulse · 0.3.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
     <div class="inline-drawer-content">
-      <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b></div>
+      <div class="sp-diagnostic">UI <b id="sp-ui-state">✓</b> · Spotify <b id="sp-auth-state">—</b> · Playback <b id="sp-play-state">—</b><div id="sp-account" class="sp-account">Аккаунт: —</div></div>
       <label class="checkbox_label"><input id="sp-enabled" type="checkbox"><span>Включить SoundPulse</span></label>
       <label>Spotify Client ID<input id="sp-client-id" class="text_pole" type="text" autocomplete="off" placeholder="вставь тот же Client ID"></label>
       <div class="sp-settings-row"><button id="sp-auth" class="menu_button">🎧 Authenticate</button><button id="sp-logout" class="menu_button">Logout</button></div>
@@ -292,6 +332,7 @@ function createSettings() {
 function updateStatus() {
     if ($id('sp-auth-state')) $id('sp-auth-state').textContent=authStatus==='not-connected'?'—':authStatus==='error'?'✕':'✓';
     if ($id('sp-play-state')) $id('sp-play-state').textContent=currentTrack?'✓':'—';
+    if ($id('sp-account')) $id('sp-account').textContent='Аккаунт: '+((authStatus && !['not-connected','connected','error'].includes(authStatus))?authStatus:'—');
 }
 function fmt(ms){let s=Math.floor((ms||0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 function progress(){if(!currentTrack)return 0;return Math.min(currentTrack.duration,currentTrack.progress+(currentTrack.playing?Date.now()-currentTrack.stamp:0))}
@@ -315,7 +356,7 @@ function render() {
         $id('sp-artist').textContent=tokenData()?'Включи трек в Spotify':'вставь Client ID → Authenticate';
         $id('sp-art').style.display='none';
     }
-    updateStatus(); inject(); syncDialog();
+    updateStatus(); inject(); syncDialog(); syncMini();
 }
 function applyCoverColor(url) {
     const img=new Image(); img.crossOrigin='anonymous';
@@ -336,16 +377,16 @@ function tick() {
     const p=progress(), pct=currentTrack.duration?p/currentTrack.duration*100:0;
     if($id('sp-line-fill'))$id('sp-line-fill').style.width=pct+'%';
     if($id('sp-now'))$id('sp-now').textContent=fmt(p);
-    if($id('sp-total'))$id('sp-total').textContent=fmt(currentTrack.duration); syncDialog();
+    if($id('sp-total'))$id('sp-total').textContent=fmt(currentTrack.duration); syncDialog(); syncMini();
 }
 async function init() {
     if(await handleCallback()) return;
     loadSettings();
-    createPlayer(); createTopLayer(); createSettings(); attachMenu(); render();
+    createPlayer(); createMiniPlayer(); createTopLayer(); createSettings(); attachMenu(); render();
     setInterval(attachMenu,1000);
     if(tokenData()){await getUser(); await poll();}
     pollTimer=setInterval(poll,8000);
     setInterval(tick,500);
-    console.log('[SoundPulse] v0.2.1 ready');
+    console.log('[SoundPulse] v0.3.0 ready');
 }
 $(document).ready(()=>setTimeout(init,1200));

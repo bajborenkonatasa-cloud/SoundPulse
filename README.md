@@ -1,9 +1,14 @@
-# SoundPulse v0.2.1
-Исправления:
-- визуальный плеер теперь открывается через native `<dialog>` top layer, как проверенный подход Scene Omens;
-- пункт SoundPulse в волшебной палочке открывает top-layer плеер;
-- тестовая кнопка открывает тот же top-layer;
-- Spotify OAuth использует `/callback/spotify`, как официальный SillyTavern Spotify extension;
-- callback понимает SillyTavern `source=spotify&query=...`.
+# SoundPulse v0.3.0
 
-Важно: в Spotify Developer Dashboard Redirect URI для этого Client ID должен совпадать с адресом, который использует SillyTavern: `<ваш origin>/callback/spotify`.
+Первый компактный мобильный UI:
+- маленькая плавающая плашка (~265 px на телефоне);
+- перетаскивание пальцем по экрану + сохранение позиции;
+- × сворачивает плашку в один винил;
+- тап по компактной плашке открывает большой top-layer плеер;
+- волшебная палочка → SoundPulse показывает/прячет компактный виджет;
+- Spotify nickname после успешного OAuth показывается и в настройках, и на mini-player;
+- current track / artist / progress / playback status;
+- динамический accent от обложки сохранён;
+- большой dialog остаётся как подробный плеер/диагностика.
+
+До успешного OAuth оригинальный Spotify extension лучше оставить установленным.
